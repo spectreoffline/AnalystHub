@@ -1,0 +1,52 @@
+name: "General Information to Gather"
+children:
+  - name: "Who?"
+    children:
+      - name: "Attacker"
+        children:
+          - name: "Internal"
+            children:
+              - name: "IP Address"
+                children: []
+              - name: "Hostname"
+                children: []
+              - name: "Job Function"
+                children: []
+              - name: "Username"
+                children: []
+              - name: "Email Address"
+                children: []
+          - name: "External"
+            children: []
+      - name: "Victim"
+        children: []
+  
+  - name: "What?"
+    children:
+      - name: "Traffic"
+        children: []
+      - name: "Files"
+        children: []
+      - name: "Outcome"
+        children: []
+  
+  - name: "When?"
+    children: []
+  
+  - name: "How?"
+    children:
+      - name: "Attack Type"
+        children: []
+      - name: "Attack Vector"
+        children: []
+      - name: "Post Exploit"
+        children: []
+  
+  - name: "Why?"
+    children:
+      - name: "Motive"
+        children: []
+      - name: "Target"
+        children: []
+      - name: "Root Cause"
+        children: [] 
