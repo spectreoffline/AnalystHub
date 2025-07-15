@@ -143,16 +143,18 @@ class TreeDiagram {
             })
             .attr('transform', d => `translate(${source.y0},${source.x0})`);
 
-        // Add node circles/dots
-        nodeEnter.append('circle')
+        // Add node circles/dots only for expandable nodes
+        nodeEnter.filter(d => d.children || d._children || (d.data.children && d.data.children.length > 0))
+            .append('circle')
             .attr('class', 'node-dot')
             .attr('r', 6)
-            .attr('cx', 0)
+            .attr('cx', -40)  // Position dots to the left of the text
             .attr('cy', 0)
             .style('fill', d => d._children ? '#fff' : '#4a90e2')
             .style('stroke', '#4a90e2')
             .style('stroke-width', 2)
             .style('cursor', 'pointer')
+            .style('opacity', 1)
             .on('click', (event, d) => this.clickDot(event, d));
 
         // Add white background rectangles for text (to appear above lines)
@@ -208,19 +210,7 @@ class TreeDiagram {
             })
             .style('fill-opacity', 1e-6);
 
-        // Add expandable indicator (+/-) for nodes with children
-        nodeEnter.append('text')
-            .attr('class', 'expandable-indicator')
-            .attr('dy', '0em')
-            .attr('x', 0)
-            .attr('text-anchor', 'start')
-            .text(d => {
-                if (d.children || d._children || d.data.children.length > 0) {
-                    return d._children ? '+' : '-';
-                }
-                return '';
-            })
-            .style('fill-opacity', 1e-6);
+        // Expandable indicators (+/-) removed since dots now handle expansion
 
         // Update
         const nodeUpdate = nodeEnter.merge(node);
@@ -251,34 +241,10 @@ class TreeDiagram {
             .transition()
             .duration(this.duration)
             .ease(d3.easeCircleOut)
-            .style('fill', d => d._children ? '#fff' : '#4a90e2');
+            .style('fill', d => d._children ? '#fff' : '#4a90e2')
+            .style('opacity', 1);
 
-        nodeUpdate.select('.expandable-indicator')
-            .transition()
-            .duration(this.duration)
-            .ease(d3.easeCircleOut)
-            .style('fill-opacity', d => {
-                if (d.children || d._children || d.data.children.length > 0) {
-                    return 1;
-                }
-                return 0;
-            })
-            .text(d => {
-                if (d.children || d._children || d.data.children.length > 0) {
-                    return d._children ? '+' : '-';
-                }
-                return '';
-            })
-            .attr('x', function(d) {
-                const textElement = d3.select(this.parentNode).select('text').node();
-                if (textElement && (d.children || d._children || d.data.children.length > 0)) {
-                    const bbox = textElement.getBBox();
-                    // Position indicator to create equal spacing: left padding = right padding
-                    // Box width = bbox.width + 8 + 20, so indicator should be at bbox.width/2 + 12
-                    return bbox.width / 2 + 12;
-                }
-                return 0;
-            });
+        // Expandable indicator updates removed since dots now handle expansion
 
         // Update text background rectangles (no animation to prevent bounce)
         nodeUpdate.select('.text-background')
@@ -302,12 +268,7 @@ class TreeDiagram {
                 const textElement = d3.select(this.parentNode).select('text').node();
                 if (textElement) {
                     const bbox = textElement.getBBox();
-                    let width = bbox.width + 8;
-                    // Add space for indicator if present
-                    if (d.children || d._children || d.data.children.length > 0) {
-                        width += 20; // Extra space for + or - indicator
-                    }
-                    return width;
+                    return bbox.width + 8;
                 }
                 return 50;
             })
@@ -389,14 +350,18 @@ class TreeDiagram {
     clickDot(event, d) {
         // Dot click: expand/collapse node
         event.stopPropagation();
-        if (d.children) {
-            d._children = d.children;
-            d.children = null;
-        } else {
-            d.children = d._children;
-            d._children = null;
+        
+        // Only process if node has children
+        if (d.children || d._children || (d.data.children && d.data.children.length > 0)) {
+            if (d.children) {
+                d._children = d.children;
+                d.children = null;
+            } else {
+                d.children = d._children;
+                d._children = null;
+            }
+            this.update(d);
         }
-        this.update(d);
     }
 
     clickText(event, d) {
@@ -471,24 +436,13 @@ class NodePopup {
         // Set popup content
         this.title.textContent = node.data.name;
         
-        // Use description from YAML data if available, otherwise show basic info
+        // Only show description from YAML data if available
         let description = '';
         
         if (node.data.description) {
             description = node.data.description;
         } else {
-            // Fallback to basic node information
-            description = `Node: ${node.data.name}`;
-            if (node.depth > 0) {
-                description += `<br>Depth: ${node.depth}`;
-            }
-            if (node.children || node._children) {
-                const childCount = node.children ? node.children.length : node._children.length;
-                description += `<br>Child nodes: ${childCount}`;
-            }
-            if (node.parent) {
-                description += `<br>Parent: ${node.parent.data.name}`;
-            }
+            description = 'No description available for this node.';
         }
         
         this.description.innerHTML = description;
