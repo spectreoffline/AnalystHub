@@ -11,7 +11,7 @@ children:
             description: "The attacker is either using compromised internal credentials/devices, or is an insider threat with legitimate access."
             children:
               - name: "IP Address"
-                description: "Internal IP address from which the attack originated. \n View the IP address reputation at https://abuseipdb.com/"
+                description: "Internal IP address from which the attack originated. \nView the IP address reputation at https://abuseipdb.com/"
                 children: []
               - name: "Hostname"
                 description: "Internal hostname from which the attack originated."
