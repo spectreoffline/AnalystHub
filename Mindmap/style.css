@@ -1,0 +1,139 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f5f5;
+    overflow: hidden;
+}
+
+.container {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+}
+
+.controls {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 10px 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.control-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 6px;
+    background: #007bff;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.control-btn:hover {
+    background: #0056b3;
+    transform: scale(1.05);
+}
+
+.control-btn:active {
+    transform: scale(0.95);
+}
+
+#resetView {
+    font-size: 12px;
+    width: auto;
+    padding: 0 12px;
+}
+
+#zoomLevel {
+    font-weight: 600;
+    color: #333;
+    min-width: 50px;
+    text-align: center;
+}
+
+.mindmap-container {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    cursor: grab;
+    background: #fff;
+    position: relative;
+}
+
+.mindmap-container.dragging {
+    cursor: grabbing;
+}
+
+.mindmap-wrapper {
+    width: 100%;
+    height: 100%;
+    transform-origin: center center;
+    transition: transform 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#mindmapSvg {
+    max-width: none;
+    max-height: none;
+    width: auto;
+    height: auto;
+    display: block;
+    pointer-events: none;
+}
+
+/* Instructions overlay */
+.instructions {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 14px;
+    max-width: 300px;
+    z-index: 1000;
+}
+
+.instructions h4 {
+    margin-bottom: 8px;
+    color: #ffd700;
+}
+
+.instructions ul {
+    list-style: none;
+    padding: 0;
+}
+
+.instructions li {
+    margin: 4px 0;
+    padding-left: 16px;
+    position: relative;
+}
+
+.instructions li:before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: #ffd700;
+} 
