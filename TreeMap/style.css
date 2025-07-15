@@ -4,6 +4,20 @@ body {
     padding: 0;
     background-color: #fafafa;
     overflow: hidden;
+    transition: background-color 0.3s ease;
+}
+
+/* Dark mode styles */
+body.dark-mode {
+    background-color: #1a1a1a;
+}
+
+body.dark-mode #tree-container {
+    background-color: #1a1a1a;
+}
+
+body.dark-mode #tree-svg {
+    background-color: #1a1a1a;
 }
 
 .controls {
@@ -200,4 +214,134 @@ body {
     opacity: 0;
     transform: scale(0);
     transition: all 0.3s ease;
+}
+
+/* Popup styles */
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.popup-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.popup-content {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    transform: scale(0.7);
+    transition: transform 0.3s ease;
+}
+
+.popup-overlay.active .popup-content {
+    transform: scale(1);
+}
+
+.popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.popup-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.popup-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s ease;
+}
+
+.popup-close:hover {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.popup-body {
+    padding: 20px 24px 24px;
+}
+
+.popup-body p {
+    margin: 0;
+    color: #666;
+    line-height: 1.6;
+    font-size: 16px;
+}
+
+/* Dark mode popup styles */
+body.dark-mode .popup-content {
+    background-color: #2a2a2a;
+    color: #e0e0e0;
+}
+
+body.dark-mode .popup-header {
+    border-bottom-color: #444;
+}
+
+body.dark-mode .popup-header h3 {
+    color: #e0e0e0;
+}
+
+body.dark-mode .popup-close {
+    color: #ccc;
+}
+
+body.dark-mode .popup-close:hover {
+    background-color: #444;
+    color: #fff;
+}
+
+body.dark-mode .popup-body p {
+    color: #ccc;
+}
+
+/* Blur effect for background when popup is active */
+#tree-container {
+    transition: filter 0.3s ease;
+}
+
+.controls {
+    transition: filter 0.3s ease;
+}
+
+/* Apply blur when popup is active */
+body.popup-active #tree-container {
+    filter: blur(3px);
+}
+
+body.popup-active .controls {
+    filter: blur(3px);
 } 
