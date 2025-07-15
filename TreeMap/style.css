@@ -3,11 +3,9 @@ body {
     margin: 0;
     padding: 0;
     background-color: #fafafa;
-    overflow: hidden;
     transition: background-color 0.3s ease;
 }
 
-/* Dark mode styles */
 body.dark-mode {
     background-color: #1a1a1a;
 }
@@ -18,6 +16,26 @@ body.dark-mode #tree-container {
 
 body.dark-mode #tree-svg {
     background-color: #1a1a1a;
+}
+
+body.dark-mode .text-background {
+    fill: #2a2a2a;
+    stroke: #555;
+}
+
+body.dark-mode .controls button {
+    background: #333;
+    border: 1px solid #555;
+    color: #fff;
+}
+
+body.dark-mode .controls button:hover {
+    background: #444;
+    border-color: #777;
+}
+
+body.dark-mode .node text {
+    fill: #fff;
 }
 
 .controls {
@@ -49,54 +67,28 @@ body.dark-mode #tree-svg {
     background: #e0e0e0;
 }
 
-.zoom-controls {
-    display: flex;
-    gap: 5px;
-    align-items: center;
-    margin-left: 10px;
-    padding-left: 10px;
-    border-left: 1px solid #ccc;
-}
 
-.zoom-controls button {
-    padding: 6px 12px;
-    min-width: 32px;
-}
-
-#zoomLevel {
-    font-size: 12px;
-    color: #666;
-    margin-left: 5px;
-}
 
 #tree-container {
     width: 100vw;
     height: 100vh;
     background-color: #fafafa;
-    overflow: hidden;
-    cursor: grab;
-}
-
-#tree-container.dragging {
-    cursor: grabbing;
+    overflow: auto;
 }
 
 #tree-wrapper {
     width: 100%;
     height: 100%;
-    transition: transform 0.3s ease;
+    overflow: visible;
 }
 
 #tree-svg {
-    width: 100%;
-    height: 100%;
+    display: block;
     background-color: #fafafa;
-    /* Browser-specific optimizations */
     shape-rendering: geometricPrecision;
     text-rendering: geometricPrecision;
 }
 
-/* Node styles */
 .node {
     font-size: 14px;
     font-weight: 500;
@@ -116,7 +108,6 @@ body.dark-mode #tree-svg {
     transform: scale(1.1);
 }
 
-/* Collapsed nodes should have white fill */
 .node.collapsed .node-dot {
     fill: #fff;
 }
@@ -127,7 +118,6 @@ body.dark-mode #tree-svg {
     fill: #333;
 }
 
-/* Text styles */
 .node text {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     text-anchor: middle;
@@ -136,14 +126,12 @@ body.dark-mode #tree-svg {
     cursor: pointer;
 }
 
-/* Text background rectangles */
 .text-background {
     fill: white;
     stroke: #ccc;
     stroke-width: 1px;
     opacity: 0.95;
     transition: all 0.3s ease;
-    /* Firefox-specific optimizations */
     will-change: stroke, stroke-width, opacity;
 }
 
@@ -170,14 +158,11 @@ body.dark-mode #tree-svg {
     fill: #333;
 }
 
-/* Link styles */
 .link {
     fill: none;
     stroke: #ccc;
     stroke-width: 1px;
     stroke-opacity: 0.8;
-    /* Remove CSS transition to avoid conflicts with D3.js transitions */
-    /* transition: all 0.3s ease; */
     vector-effect: non-scaling-stroke;
 }
 
@@ -186,9 +171,6 @@ body.dark-mode #tree-svg {
     stroke-opacity: 1;
 }
 
-/* Expandable indicator styles removed since dots now handle expansion */
-
-/* Tooltip styles */
 .tooltip {
     position: absolute;
     background: rgba(0, 0, 0, 0.8);
@@ -201,7 +183,6 @@ body.dark-mode #tree-svg {
     transition: opacity 0.3s;
 }
 
-/* Animation classes */
 .node-enter {
     opacity: 0;
     transform: scale(0);
@@ -224,7 +205,6 @@ body.dark-mode #tree-svg {
     transition: all 0.3s ease;
 }
 
-/* Popup styles */
 .popup-overlay {
     position: fixed;
     top: 0;
@@ -309,7 +289,6 @@ body.dark-mode #tree-svg {
     font-size: 16px;
 }
 
-/* Dark mode popup styles */
 body.dark-mode .popup-content {
     background-color: #2a2a2a;
     color: #e0e0e0;
@@ -336,7 +315,6 @@ body.dark-mode .popup-body p {
     color: #ccc;
 }
 
-/* Blur effect for background when popup is active */
 #tree-container {
     transition: filter 0.3s ease;
 }
@@ -345,7 +323,6 @@ body.dark-mode .popup-body p {
     transition: filter 0.3s ease;
 }
 
-/* Apply blur when popup is active */
 body.popup-active #tree-container {
     filter: blur(3px);
 }
