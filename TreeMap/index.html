@@ -12,6 +12,7 @@
     <div class="controls">
       <button id="expandAll">Expand All</button>
       <button id="collapseAll">Collapse All</button>
+      <button id="darkModeToggle">Dark Mode</button>
       <div class="zoom-controls">
         <button id="zoomIn">+</button>
         <button id="zoomOut">-</button>
@@ -22,6 +23,19 @@
     <div id="tree-container">
       <div id="tree-wrapper">
         <svg id="tree-svg"></svg>
+      </div>
+    </div>
+    
+    <!-- Popup overlay for node information -->
+    <div id="popup-overlay" class="popup-overlay">
+      <div id="popup-content" class="popup-content">
+        <div class="popup-header">
+          <h3 id="popup-title"></h3>
+          <button id="popup-close" class="popup-close">&times;</button>
+        </div>
+        <div class="popup-body">
+          <p id="popup-description">Single-click a node to view its information. Double-click to expand/collapse.</p>
+        </div>
       </div>
     </div>
     <script src="script.js"></script>
