@@ -363,15 +363,26 @@ class TreeDiagram {
     }
 
     click(event, d) {
-        if (d.children) {
-            d._children = d.children;
-            d.children = null;
+        // Check if this is a double-click for expansion/collapse
+        if (event.detail === 2) {
+            // Double-click: expand/collapse node
+            if (d.children) {
+                d._children = d.children;
+                d.children = null;
+            } else {
+                d.children = d._children;
+                d._children = null;
+            }
+            this.update(d);
         } else {
-            d.children = d._children;
-            d._children = null;
+            // Single click: show popup
+            this.showNodePopup(d);
         }
-        
-        this.update(d);
+    }
+
+    showNodePopup(node) {
+        const popup = new NodePopup();
+        popup.show(node);
     }
 
     // Method to add new nodes dynamically
@@ -396,6 +407,78 @@ class TreeDiagram {
         // Refresh the tree
         this.root = d3.hierarchy(this.data, d => d.children);
         this.update(parentNode);
+    }
+}
+
+// Node Popup Control
+class NodePopup {
+    constructor() {
+        this.overlay = document.getElementById('popup-overlay');
+        this.title = document.getElementById('popup-title');
+        this.description = document.getElementById('popup-description');
+        this.closeBtn = document.getElementById('popup-close');
+        
+        this.init();
+    }
+
+    init() {
+        // Close popup when clicking the close button
+        this.closeBtn.addEventListener('click', () => {
+            this.hide();
+        });
+
+        // Close popup when clicking outside the content
+        this.overlay.addEventListener('click', (event) => {
+            if (event.target === this.overlay) {
+                this.hide();
+            }
+        });
+
+        // Close popup when pressing Escape key
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && this.overlay.classList.contains('active')) {
+                this.hide();
+            }
+        });
+    }
+
+    show(node) {
+        // Set popup content
+        this.title.textContent = node.data.name;
+        
+        // Generate description based on node properties
+        let description = `Node: ${node.data.name}`;
+        if (node.depth > 0) {
+            description += `<br>Depth: ${node.depth}`;
+        }
+        if (node.children || node._children) {
+            const childCount = node.children ? node.children.length : node._children.length;
+            description += `<br>Child nodes: ${childCount}`;
+        }
+        if (node.parent) {
+            description += `<br>Parent: ${node.parent.data.name}`;
+        }
+        
+        // Add any additional information from the node data
+        if (node.data.description) {
+            description += `<br><br>${node.data.description}`;
+        }
+        
+        this.description.innerHTML = description;
+        
+        // Show popup and apply blur
+        this.overlay.classList.add('active');
+        document.body.classList.add('popup-active');
+        
+        // Focus on close button for accessibility
+        setTimeout(() => {
+            this.closeBtn.focus();
+        }, 100);
+    }
+
+    hide() {
+        this.overlay.classList.remove('active');
+        document.body.classList.remove('popup-active');
     }
 }
 
@@ -676,28 +759,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             tree.collapseAll();
         });
         
-        // Add context menu for adding nodes (right-click functionality)
-        d3.select('#tree-svg').on('contextmenu', function(event) {
-            event.preventDefault();
+        // Dark mode toggle functionality
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const body = document.body;
+        
+        darkModeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
             
-            const nodeName = prompt('Enter name for new node:');
-            if (nodeName) {
-                // For demo purposes, add to root. In a real app, you'd determine the target node
-                const rootNode = tree.root;
-                tree.addNode(rootNode, nodeName);
+            // Update button text
+            if (body.classList.contains('dark-mode')) {
+                darkModeToggle.textContent = 'Light Mode';
+            } else {
+                darkModeToggle.textContent = 'Dark Mode';
             }
         });
         
-        // Add keyboard shortcuts
-        document.addEventListener('keydown', function(event) {
-            if (event.ctrlKey && event.key === 'n') {
-                event.preventDefault();
-                const nodeName = prompt('Enter name for new node:');
-                if (nodeName) {
-                    tree.addNode(tree.root, nodeName);
-                }
-            }
-        });
+        // Right-click context menu removed to prevent users from modifying nodes
         
         // Remove loading message
         document.body.removeChild(loadingDiv);
