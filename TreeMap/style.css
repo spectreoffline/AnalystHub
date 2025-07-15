@@ -105,11 +105,20 @@ body.dark-mode #tree-svg {
 .node-dot {
     cursor: pointer;
     transition: all 0.2s ease;
+    opacity: 1;
+    fill: #4a90e2;
+    stroke: #4a90e2;
+    stroke-width: 2px;
 }
 
 .node-dot:hover {
     stroke-width: 3px;
     transform: scale(1.1);
+}
+
+/* Collapsed nodes should have white fill */
+.node.collapsed .node-dot {
+    fill: #fff;
 }
 
 .node.root text {
@@ -124,7 +133,7 @@ body.dark-mode #tree-svg {
     text-anchor: middle;
     dominant-baseline: middle;
     fill: #333;
-    pointer-events: none;
+    cursor: pointer;
 }
 
 /* Text background rectangles */
@@ -177,17 +186,7 @@ body.dark-mode #tree-svg {
     stroke-opacity: 1;
 }
 
-/* Expandable indicator */
-.expandable-indicator {
-    fill: #333;
-    font-size: 12px;
-    text-anchor: start;
-    dominant-baseline: middle;
-}
-
-.collapsed .expandable-indicator {
-    fill: white;
-}
+/* Expandable indicator styles removed since dots now handle expansion */
 
 /* Tooltip styles */
 .tooltip {
