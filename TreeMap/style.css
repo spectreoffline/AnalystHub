@@ -98,9 +98,18 @@ body.dark-mode #tree-svg {
 
 /* Node styles */
 .node {
-    cursor: pointer;
     font-size: 14px;
     font-weight: 500;
+}
+
+.node-dot {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.node-dot:hover {
+    stroke-width: 3px;
+    transform: scale(1.1);
 }
 
 .node.root text {
