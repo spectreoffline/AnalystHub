@@ -141,8 +141,19 @@ class TreeDiagram {
                 if (d._children) classes += ' collapsed';
                 return classes;
             })
-            .attr('transform', d => `translate(${source.y0},${source.x0})`)
-            .on('click', (event, d) => this.click(event, d));
+            .attr('transform', d => `translate(${source.y0},${source.x0})`);
+
+        // Add node circles/dots
+        nodeEnter.append('circle')
+            .attr('class', 'node-dot')
+            .attr('r', 6)
+            .attr('cx', 0)
+            .attr('cy', 0)
+            .style('fill', d => d._children ? '#fff' : '#4a90e2')
+            .style('stroke', '#4a90e2')
+            .style('stroke-width', 2)
+            .style('cursor', 'pointer')
+            .on('click', (event, d) => this.clickDot(event, d));
 
         // Add white background rectangles for text (to appear above lines)
         nodeEnter.append('rect')
@@ -158,6 +169,8 @@ class TreeDiagram {
             .attr('dy', '0em')
             .attr('x', 0)
             .attr('text-anchor', 'middle')
+            .style('cursor', 'pointer')
+            .on('click', (event, d) => this.clickText(event, d))
             .each(function(d) {
                 const text = d3.select(this);
                 const name = d.data.name;
@@ -232,6 +245,13 @@ class TreeDiagram {
             .duration(this.duration)
             .ease(d3.easeCircleOut)
             .style('fill-opacity', 1);
+
+        // Update node circles/dots
+        nodeUpdate.select('.node-dot')
+            .transition()
+            .duration(this.duration)
+            .ease(d3.easeCircleOut)
+            .style('fill', d => d._children ? '#fff' : '#4a90e2');
 
         nodeUpdate.select('.expandable-indicator')
             .transition()
@@ -315,6 +335,10 @@ class TreeDiagram {
         nodeExit.select('.text-background')
             .style('opacity', 1e-6);
 
+        // On exit reduce the opacity of node dots
+        nodeExit.select('.node-dot')
+            .style('opacity', 1e-6);
+
         // Update the links
         const link = this.g.selectAll('path.link')
             .data(links, d => d.id);
@@ -362,22 +386,23 @@ class TreeDiagram {
         return path;
     }
 
-    click(event, d) {
-        // Check if this is a double-click for expansion/collapse
-        if (event.detail === 2) {
-            // Double-click: expand/collapse node
-            if (d.children) {
-                d._children = d.children;
-                d.children = null;
-            } else {
-                d.children = d._children;
-                d._children = null;
-            }
-            this.update(d);
+    clickDot(event, d) {
+        // Dot click: expand/collapse node
+        event.stopPropagation();
+        if (d.children) {
+            d._children = d.children;
+            d.children = null;
         } else {
-            // Single click: show popup
-            this.showNodePopup(d);
+            d.children = d._children;
+            d._children = null;
         }
+        this.update(d);
+    }
+
+    clickText(event, d) {
+        // Text click: show popup
+        event.stopPropagation();
+        this.showNodePopup(d);
     }
 
     showNodePopup(node) {
@@ -446,22 +471,24 @@ class NodePopup {
         // Set popup content
         this.title.textContent = node.data.name;
         
-        // Generate description based on node properties
-        let description = `Node: ${node.data.name}`;
-        if (node.depth > 0) {
-            description += `<br>Depth: ${node.depth}`;
-        }
-        if (node.children || node._children) {
-            const childCount = node.children ? node.children.length : node._children.length;
-            description += `<br>Child nodes: ${childCount}`;
-        }
-        if (node.parent) {
-            description += `<br>Parent: ${node.parent.data.name}`;
-        }
+        // Use description from YAML data if available, otherwise show basic info
+        let description = '';
         
-        // Add any additional information from the node data
         if (node.data.description) {
-            description += `<br><br>${node.data.description}`;
+            description = node.data.description;
+        } else {
+            // Fallback to basic node information
+            description = `Node: ${node.data.name}`;
+            if (node.depth > 0) {
+                description += `<br>Depth: ${node.depth}`;
+            }
+            if (node.children || node._children) {
+                const childCount = node.children ? node.children.length : node._children.length;
+                description += `<br>Child nodes: ${childCount}`;
+            }
+            if (node.parent) {
+                description += `<br>Parent: ${node.parent.data.name}`;
+            }
         }
         
         this.description.innerHTML = description;
