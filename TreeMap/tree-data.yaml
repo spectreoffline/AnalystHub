@@ -8,69 +8,308 @@ children:
         description: "Details about the person or entity that initiated the attack."
         children:
           - name: "Internal"
-            description: "Information about internal threats or compromised internal accounts."
+            description: "The attacker is either using compromised internal credentials/devices, or is an insider threat with legitimate access."
             children:
               - name: "IP Address"
-                description: "The internal IP address of the attacker's system."
+                description: "Internal IP address from which the attack originated."
                 children: []
               - name: "Hostname"
-                description: "The computer name or hostname of the attacker's system."
+                description: "Internal hostname from which the attack originated."
                 children: []
               - name: "Job Function"
-                description: "The role or job function of the internal attacker."
+                description: "The role or job function of the internal attacker. This helps determine their level of access and what kind of behavior is expected or anomalous."
                 children: []
               - name: "Username"
-                description: "The username or account name used by the internal attacker."
+                description: "Internal username used during the attack."
                 children: []
               - name: "Email Address"
-                description: "The email address associated with the internal attacker."
+                description: "Internal email address used during the attack."
                 children: []
           - name: "External"
             description: "Information about external threats or attackers from outside the organization."
-            children: []
+            children:
+              - name: "Email Address"
+                description: "The email address of the attacker which is either the origin of the attack or is associated with it in some way."
+                children: []
+              - name: "Domain"
+                description: "The internet domain name associated with the attacker, such as the sender's domain in a phishing email or the domain used to host malicious content or command-and-control infrastructure."
+                children: []
+              - name: "IP Address"
+                description: "External IP address from which the attack originated or was observed. Useful for attribution, geolocation, and identifying malicious infrastructure."
+                children: []
+              
       - name: "Victim"
         description: "Information about the person or system that was targeted or affected."
-        children: []
+        children:
+          - name: "IP Address"
+            description: "Internal IP address of the affected system or user workstation."
+            children: []
+          - name: "Hostname"
+            description: "Hostname of the affected system or user workstation."
+            children: []
+          - name: "Job Function"
+            description: "The role or job function of the victim. Important for understanding potential access levels and data that may have been compromised."
+            children: []
+          - name: "Username"
+            description: "Username of the affected user account."
+            children: []
+          - name: "Email Address"
+            description: "Email address of the affected user."
+            children: []
   
   - name: "What?"
     description: "Information about what was affected, accessed, or compromised during the incident."
     children:
       - name: "Traffic"
         description: "Network traffic patterns, connections, and data flows during the incident."
-        children: []
+        children:
+          - name: "Amount"
+            description: "Volume or quantity of network traffic observed during the incident, measured in bytes, packets, or connections."
+            children: []
+          - name: "Source / Destination"
+            description: "The origin and destination points of the suspicious network traffic, including IP addresses, ports, and domains."
+            children: []
+          - name: "Protocol (Port)"
+            description: "The network protocols and associated ports used in the suspicious traffic (e.g., HTTP/80, HTTPS/443, SSH/22)."
+            children: []
+          - name: "Timeframe" 
+            description: "The duration and timing patterns of the suspicious network traffic, including start/end times and frequency."
+            children: []
+          - name: "Typical?"
+            description: "Analysis of whether the observed traffic patterns are normal/expected or anomalous compared to baseline network behavior."
+            children: []
       - name: "Files"
         description: "Files that were accessed, modified, deleted, or exfiltrated during the incident."
-        children: []
+        children:
+          - name: "Type"
+            description: "The file type or format of affected files (e.g., .exe, .doc, .pdf) which can indicate malware types or data targeted."
+            children: []
+          - name: "Hash"
+            description: "Cryptographic hash values (MD5, SHA1, SHA256) that uniquely identify files for tracking and analysis."
+            children: []
+          - name: "Path"
+            description: "The full path showing where affected files were located on the system."
+            children: []
+          - name: "Origin" 
+            description: "Where the file came from - downloaded location, creating process, or user who introduced it."
+            children: []
+          - name: "Behavior & Reputation"
+            description: "Analysis of file behavior, malware scan results, and reputation scores from security tools."
+            children: []
       - name: "Outcome"
         description: "The final result or impact of the incident on systems and data."
-        children: []
+        children:
+          - name: "Allowed"
+            description: "Traffic or actions that were permitted by security controls after being deemed legitimate or low-risk."
+            children: []
+          - name: "Blocked"
+            description: "Activities or traffic that were prevented by security controls from executing or completing."
+            children: []
+          - name: "Quarantined"
+            description: "Suspicious files or content isolated in a secure location for further analysis without risk to systems."
+            children: []
+          - name: "Deleted"
+            description: "Files or data that were removed from systems either by the attack or as part of incident response."
+            children: []
+          - name: "Alerted"
+            description: "Security events that triggered notifications or alerts in EDR/SIEM systems."
+            children: []
+          - name: "Contained"
+            description: "Threats or incidents that were successfully isolated to prevent further spread or damage."
+            children: []
+          - name: "Logged"
+            description: "Activities recorded in system, security, or audit logs for analysis and documentation."
+            children: []
   
   - name: "When?"
     description: "Timeline information about when the incident occurred and was discovered."
-    children: []
+    children:
+      - name: "Time of Initial Compromise"
+        description: "The timestamp or timeframe when the attacker first gained unauthorized access to the system."
+        children: []
+      - name: "Time of Discovery"
+        description: "When the security incident was first detected or reported by monitoring systems or personnel."
+        children: []
+      - name: "Attack Phases"
+        description: "Timeline showing the progression and different stages of the attack over time."
+        children: []
+      - name: "Time of Containment"
+        description: "When the incident was successfully contained and further damage was prevented."
+        children: []
+      - name: "Dwell Time (Time to Detection)"
+        description: "The duration between initial compromise and discovery, indicating how long the threat went undetected."
+        children: []
   
   - name: "How?"
     description: "Technical details about how the attack was carried out and methods used."
     children:
       - name: "Attack Type"
         description: "The category or type of attack that was used (e.g., malware, phishing, etc.)."
-        children: []
+        children:
+          - name: "Phishing"
+            description: "Social engineering attacks using fraudulent communications to steal credentials or deliver malware."
+            children: []
+          - name: "Web Application Attack"
+            description: "Exploitation of vulnerabilities in web applications, including SQL injection, XSS, and CSRF attacks."
+            children: []
+          - name: "Insider Threat" 
+            description: "Malicious actions by employees, contractors or others with legitimate access to systems."
+            children: []
+          - name: "Zero Day Exploit"
+            description: "Attacks leveraging previously unknown software vulnerabilities before patches are available."
+            children: []
+          - name: "Malware"
+            description: "Malicious software including viruses, worms, trojans, and spyware designed to compromise systems."
+            children: []
+          - name: "Ransomware"
+            description: "Malware that encrypts files and demands payment for decryption keys."
+            children: []
+          - name: "Business Email Compromise"
+            description: "Sophisticated scams targeting businesses to conduct unauthorized fund transfers."
+            children: []
+          - name: "Denial of Service"
+            description: "Attacks that overwhelm systems or networks to make resources unavailable to users."
+            children: []
+
       - name: "Attack Vector"
         description: "The specific method or pathway used to gain initial access to the system."
-        children: []
+        children:
+          - name: "Email"
+            description: "Malicious content delivered through email attachments or links."
+            children: []
+          - name: "External Remote Services"
+            description: "Exploitation of externally exposed services like VPN, VNC, RDP, or other remote access solutions."
+            children: []
+          - name: "Valid Credentials"
+            description: "Use of stolen, leaked, or otherwise compromised legitimate user credentials."
+            children: []
+          - name: "Vulnerability Exploit"
+            description: "Direct exploitation of software, hardware or configuration vulnerabilities."
+            children: []
+          - name: "Physical Media"
+            description: "Malware or attacks introduced via USB drives, external hard drives or other physical media."
+            children: []
+          - name: "Watering Hole Attack"
+            description: "Compromise of websites frequently visited by targets to deliver malware."
+            children: []
+          - name: "Supply Chain Compromise"
+            description: "Attacks that target less-secure elements in the supply chain to compromise the ultimate target."
+            children: []
+          - name: "Drive-by Download"
+            description: "Malware downloaded automatically when visiting compromised websites."
+            children: []
+          - name: "Removable Media"
+            description: "Attacks leveraging autorun features or exploits in removable storage devices."
+            children: []
+          - name: "Social Engineering"
+            description: "Non-email based social engineering tactics to gain system access."
+            children: []
       - name: "Post Exploit"
         description: "Actions taken by the attacker after gaining initial access to the system."
-        children: []
+        children:
+          - name: "Privilege Escalation"
+            description: "Techniques used to gain higher-level permissions or system access."
+            children: []
+          - name: "Reconnaissance"
+            description: "Information gathering about the target environment after gaining initial access."
+            children: []
+          - name: "Lateral Movement"
+            description: "Techniques to move through the network and access other systems from initial foothold."
+            children: []
+          - name: "Data Exfiltration"
+            description: "Methods used to steal or extract sensitive data from compromised systems."
+            children: []
+          - name: "Credential Dumping"
+            description: "Extraction of account login and password information from system memory or files."
+            children: []
+          - name: "Persistence"
+            description: "Techniques to maintain access to systems across restarts and credential changes."
+            children: []
+          - name: "Impact / Destruction"
+            description: "Actions taken to disrupt, damage or destroy systems and data."
+            children: []
+          - name: "Command & Control (C2)"
+            description: "Infrastructure and methods used to maintain communication with compromised systems."
+            children: []
+          - name: "Defense Evasion"
+            description: "Techniques used to avoid detection and bypass security controls."
+            children: []
+          - name: "Resource Hijacking"
+            description: "Unauthorized use of system resources for malicious purposes like cryptomining."
+            children: []
   
   - name: "Why?"
     description: "Information about the motivation and underlying causes of the incident."
     children:
       - name: "Motive"
         description: "The reason or motivation behind the attack (financial, political, personal, etc.)."
-        children: []
+        children:
+          - name: "Financial Gain"
+            description: "Attacks motivated by monetary profit through ransomware, fraud, theft, or cryptomining."
+            children: []
+          - name: "Disruption"
+            description: "Attacks intended to interrupt business operations, damage reputation, or cause chaos."
+            children: []
+          - name: "Espionage"
+            description: "Theft of intellectual property, trade secrets, or sensitive information for competitive advantage."
+            children: []
+          - name: "Political Activism"
+            description: "Hacktivism and politically motivated attacks to promote ideology or cause."
+            children: []
+          - name: "Personal Vendetta"
+            description: "Attacks motivated by revenge, grudges, or personal grievances against targets."
+            children: []
+          - name: "Nation State Activity"
+            description: "State-sponsored attacks for geopolitical advantage or critical infrastructure disruption."
+            children: []
+          - name: "Other / Unknown"
+            description: "Attacks with unclear, multiple, or non-standard motivations not covered by other categories."
+            children: []
       - name: "Target"
         description: "What the attacker was specifically targeting or trying to accomplish."
-        children: []
+        children:
+          - name: "Why This Organization?"
+            description: "Understanding why the attacker specifically chose to target this organization."
+            children: []
+          - name: "Why This Department?"
+            description: "Reasons behind targeting this specific department or business unit within the organization."
+            children: []
+          - name: "Why This Computer?"
+            description: "Analysis of why this particular system or device was selected as a target."
+            children: []
+          - name: "Why This User?"
+            description: "Understanding why this specific user account or individual was targeted."
+            children: []
+          - name: "Why This Data?"
+            description: "Reasons for targeting these specific data assets or information."
+            children: []
       - name: "Root Cause"
         description: "The underlying vulnerability or weakness that allowed the incident to occur."
-        children: [] 
+        children:
+          - name: "Weak Password"
+            description: "Use of easily guessable, common, or short passwords that can be brute-forced or cracked."
+            children: []
+          - name: "Lack of MFA"
+            description: "Absence of multi-factor authentication allowing account compromise through single factor."
+            children: []
+          - name: "Unpatched Vulnerabilities" 
+            description: "Known security flaws that remained unpatched and were exploited by attackers."
+            children: []
+          - name: "Leaked Credentials"
+            description: "Authentication credentials exposed through data breaches, phishing, or accidental disclosure."
+            children: []
+          - name: "User Error"
+            description: "Mistakes by users such as clicking malicious links, downloading malware, or misconfigurations."
+            children: []
+          - name: "Insider Threat"
+            description: "Malicious actions by individuals with legitimate access to systems and data."
+            children: []
+          - name: "Missing Security Controls"
+            description: "Absence of critical security measures like firewalls, encryption, or access controls."
+            children: []
+          - name: "Social Engineering"
+            description: "Manipulation of people into breaking security procedures through deception."
+            children: []
+          - name: "Third-Party Risk"
+            description: "Security incidents originating from vendors, contractors or supply chain partners."
+            children: []
