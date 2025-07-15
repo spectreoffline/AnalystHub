@@ -1,53 +1,76 @@
 name: "General Information to Gather"
+description: "This is the root node containing all investigation categories for incident response."
 children:
   - name: "Who?"
+    description: "Information about the people involved in the incident - both attackers and victims."
     children:
       - name: "Attacker"
+        description: "Details about the person or entity that initiated the attack."
         children:
           - name: "Internal"
+            description: "Information about internal threats or compromised internal accounts."
             children:
               - name: "IP Address"
-                description: "This is a test description"
+                description: "The internal IP address of the attacker's system."
                 children: []
               - name: "Hostname"
+                description: "The computer name or hostname of the attacker's system."
                 children: []
               - name: "Job Function"
+                description: "The role or job function of the internal attacker."
                 children: []
               - name: "Username"
+                description: "The username or account name used by the internal attacker."
                 children: []
               - name: "Email Address"
+                description: "The email address associated with the internal attacker."
                 children: []
           - name: "External"
+            description: "Information about external threats or attackers from outside the organization."
             children: []
       - name: "Victim"
+        description: "Information about the person or system that was targeted or affected."
         children: []
   
   - name: "What?"
+    description: "Information about what was affected, accessed, or compromised during the incident."
     children:
       - name: "Traffic"
+        description: "Network traffic patterns, connections, and data flows during the incident."
         children: []
       - name: "Files"
+        description: "Files that were accessed, modified, deleted, or exfiltrated during the incident."
         children: []
       - name: "Outcome"
+        description: "The final result or impact of the incident on systems and data."
         children: []
   
   - name: "When?"
+    description: "Timeline information about when the incident occurred and was discovered."
     children: []
   
   - name: "How?"
+    description: "Technical details about how the attack was carried out and methods used."
     children:
       - name: "Attack Type"
+        description: "The category or type of attack that was used (e.g., malware, phishing, etc.)."
         children: []
       - name: "Attack Vector"
+        description: "The specific method or pathway used to gain initial access to the system."
         children: []
       - name: "Post Exploit"
+        description: "Actions taken by the attacker after gaining initial access to the system."
         children: []
   
   - name: "Why?"
+    description: "Information about the motivation and underlying causes of the incident."
     children:
       - name: "Motive"
+        description: "The reason or motivation behind the attack (financial, political, personal, etc.)."
         children: []
       - name: "Target"
+        description: "What the attacker was specifically targeting or trying to accomplish."
         children: []
       - name: "Root Cause"
+        description: "The underlying vulnerability or weakness that allowed the incident to occur."
         children: [] 
