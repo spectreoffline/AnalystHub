@@ -1,0 +1,60 @@
+{
+  "defangRules": [
+    {
+      "description": "Defang periods",
+      "pattern": "\\.",
+      "replacement": "[.]",
+      "flags": "g"
+    },
+    {
+      "description": "Defang colons",
+      "pattern": ":",
+      "replacement": "[:]",
+      "flags": "g"
+    },
+    {
+      "description": "Defang HTTPS (case insensitive)",
+      "pattern": "https",
+      "replacement": "hxxps",
+      "flags": "gi"
+    },
+    {
+      "description": "Defang HTTP (case insensitive)",
+      "pattern": "http",
+      "replacement": "hxxp",
+      "flags": "gi"
+    }
+  ],
+  "undefangRules": [
+    {
+      "description": "Undefang periods",
+      "pattern": "\\[\\.]",
+      "replacement": ".",
+      "flags": "g"
+    },
+    {
+      "description": "Undefang colons",
+      "pattern": "\\[:\\]",
+      "replacement": ":",
+      "flags": "g"
+    },
+    {
+      "description": "Undefang HXXPS (case insensitive)",
+      "pattern": "hxxps",
+      "replacement": "https",
+      "flags": "gi"
+    },
+    {
+      "description": "Undefang HXXP (case insensitive)",
+      "pattern": "hxxp",
+      "replacement": "http",
+      "flags": "gi"
+    },
+    {
+      "description": "Undefang protocol separator",
+      "pattern": "\\[://\\]",
+      "replacement": "://",
+      "flags": "g"
+    }
+  ]
+}

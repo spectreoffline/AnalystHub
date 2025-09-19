@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fang/Defang Tool</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛡️ Fang/Defang Tool</h1>
+            <p>Safely obfuscate and restore URLs, IP addresses, and other indicators</p>
+        </header>
+
+        <main>
+            <div class="input-section">
+                <label for="inputText">Input Text:</label>
+                <textarea 
+                    id="inputText" 
+                    placeholder="Paste your text here... URLs, IP addresses, and other indicators will be processed according to the rules."
+                    rows="8"
+                ></textarea>
+            </div>
+
+            <div class="controls">
+                <button id="defangBtn" class="btn btn-primary">🔒 Defang</button>
+                <button id="undefangBtn" class="btn btn-secondary">🔓 Undefang</button>
+                <button id="clearBtn" class="btn btn-outline">🗑️ Clear</button>
+            </div>
+
+            <div class="output-section">
+                <label for="outputText">Output:</label>
+                <textarea 
+                    id="outputText" 
+                    placeholder="Processed text will appear here..."
+                    rows="8"
+                    readonly
+                ></textarea>
+                <button id="copyBtn" class="btn btn-outline btn-small">📋 Copy</button>
+            </div>
+
+            <div class="config-section">
+                <details>
+                    <summary>⚙️ Configuration Rules</summary>
+                    <div id="rulesDisplay">
+                        <div class="rules-container">
+                            <div class="rule-group">
+                                <h4>Defang Rules</h4>
+                                <div id="defangRules"></div>
+                            </div>
+                            <div class="rule-group">
+                                <h4>Undefang Rules</h4>
+                                <div id="undefangRules"></div>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </main>
+
+        <footer>
+            <p>Configure rules in <code>config.json</code> • Built for security analysis</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
