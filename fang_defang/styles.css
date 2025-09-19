@@ -17,7 +17,7 @@ body {
 .container {
     max-width: 1000px;
     margin: 0 auto;
-    background: #575757;
+    background: #303030;
     border-radius: 16px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     overflow: hidden;
@@ -130,7 +130,7 @@ textarea[readonly] {
 .btn-outline {
     background: transparent;
     border: 2px solid #667eea;
-    color: #667eea;
+    color: white;
 }
 
 .btn-outline:hover {
