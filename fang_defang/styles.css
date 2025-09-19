@@ -18,7 +18,7 @@ body {
     max-width: 1000px;
     margin: 0 auto;
     background: #303030;
-    border-radius: 16px;
+    border-radius: 0px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     overflow: hidden;
 }
@@ -64,7 +64,7 @@ textarea {
     width: 100%;
     padding: 16px;
     border: 2px solid #e1e8ed;
-    border-radius: 12px;
+    border-radius: 0px;
     font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
     font-size: 14px;
     line-height: 1.5;
@@ -96,7 +96,7 @@ textarea[readonly] {
 .btn {
     padding: 12px 24px;
     border: none;
-    border-radius: 8px;
+    border-radius: 0px;
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
@@ -161,7 +161,7 @@ textarea[readonly] {
 
 details {
     background: #f8f9fa;
-    border-radius: 8px;
+    border-radius: 0px;
     overflow: hidden;
 }
 
@@ -194,7 +194,7 @@ summary:hover {
 .rule-item {
     background: white;
     padding: 12px 16px;
-    border-radius: 6px;
+    border-radius: 0px;
     border-left: 4px solid #667eea;
     margin-bottom: 10px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -212,7 +212,7 @@ summary:hover {
     color: #666;
     background: #f1f3f4;
     padding: 2px 6px;
-    border-radius: 3px;
+    border-radius: 0px;
 }
 
 /* Footer */
@@ -227,7 +227,7 @@ footer {
 footer code {
     background: #000000;
     padding: 2px 6px;
-    border-radius: 3px;
+    border-radius: 0px;
     font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
 }
 
