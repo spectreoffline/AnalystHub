@@ -70,18 +70,18 @@ textarea {
     line-height: 1.5;
     resize: vertical;
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    background: #4a4545;
+    background: #dbdbdb;
 }
 
 textarea:focus {
     outline: none;
     border-color: #667eea;
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    background: white;
+    background: #dbdbdb;
 }
 
 textarea[readonly] {
-    background: #f8f9fa;
+    background: #dbdbdb;
     cursor: default;
 }
 
