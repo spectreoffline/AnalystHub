@@ -146,13 +146,10 @@ textarea[readonly] {
 
 /* Output section specific */
 .output-section {
-    position: relative;
 }
 
 #copyBtn {
-    position: absolute;
-    top: 40px;
-    right: 0;
+    margin-top: 10px;
 }
 
 /* Configuration section */
@@ -267,7 +264,6 @@ footer code {
     }
     
     #copyBtn {
-        position: static;
         margin-top: 10px;
         width: auto;
     }
