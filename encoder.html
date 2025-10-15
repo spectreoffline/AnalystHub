@@ -205,7 +205,7 @@
         </div>
 
         <div class="info-box">
-            <strong>How it works:</strong> Enter your text, configure the prefix and suffix, then click the button. Your text will be URL encoded and combined into a complete URL.
+            <strong>How it works:</strong> Enter your text, configure the prefix and suffix, then click the button. Your text will be URL encoded (preserving curly brackets {}) and combined into a complete URL.
         </div>
     </div>
 
@@ -216,8 +216,10 @@
             const suffix = document.getElementById('suffix').value;
             const userInput = document.getElementById('userInput').value;
 
-            // URL encode the user input
-            const encodedInput = encodeURIComponent(userInput);
+            // URL encode the user input, but preserve curly brackets
+            const encodedInput = encodeURIComponent(userInput)
+                .replace(/%7B/g, '{')
+                .replace(/%7D/g, '}');
 
             // Combine: prefix + encoded input + suffix
             const finalURL = prefix + encodedInput + suffix;
