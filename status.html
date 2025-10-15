@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Status Indicator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+            transition: background 0.6s ease;
+        }
+
+        body.available {
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+        }
+
+        body.focusing {
+            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        }
+
+        body.dnd {
+            background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+        }
+
+        .container {
+            text-align: center;
+            padding: 3rem 2.5rem;
+            min-width: 320px;
+        }
+
+        .status-text {
+            font-size: 4.5rem;
+            font-weight: 900;
+            margin-bottom: 3rem;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            transition: color 0.3s ease;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            color: white;
+        }
+
+        .status-text.available {
+            color: white;
+        }
+
+        .status-text.focusing {
+            color: white;
+        }
+
+        .status-text.dnd {
+            color: white;
+        }
+
+        .character-container {
+            margin: 1rem 0;
+            position: relative;
+            height: 180px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .character {
+            width: 120px;
+            height: 120px;
+            background: white;
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            position: relative;
+            animation: float 3s ease-in-out infinite;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Eyes */
+        .eye {
+            width: 12px;
+            height: 12px;
+            background: #333;
+            border-radius: 50%;
+            position: absolute;
+            top: 40px;
+            animation: blink 4s infinite;
+            transition: all 0.3s ease;
+        }
+
+        .eye::before {
+            content: '';
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+        }
+
+        .eye::after {
+            content: '';
+            width: 3px;
+            height: 3px;
+            background: #333;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: look 5s infinite;
+        }
+
+        .eye.left {
+            left: 35px;
+        }
+
+        .eye.right {
+            right: 35px;
+        }
+
+        /* Status-specific eye expressions */
+        .character.focusing .eye {
+            width: 8px;
+            height: 14px;
+            border-radius: 50%;
+        }
+
+        .character.dnd .eye {
+            width: 18px;
+            height: 3px;
+            border-radius: 3px;
+            animation: none;
+        }
+
+        .character.dnd .eye::before,
+        .character.dnd .eye::after {
+            display: none;
+        }
+
+        /* Mouth */
+        .mouth {
+            width: 50px;
+            height: 25px;
+            border: 3px solid #333;
+            border-top: none;
+            border-radius: 0 0 50px 50px;
+            position: absolute;
+            bottom: 35px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: all 0.3s ease;
+        }
+
+        /* Status-specific mouth expressions */
+        .character.available .mouth {
+            width: 50px;
+            height: 28px;
+            border-radius: 0 0 50px 50px;
+        }
+
+        .character.focusing .mouth {
+            width: 30px;
+            height: 2px;
+            border: none;
+            background: #333;
+            border-radius: 2px;
+            bottom: 38px;
+        }
+
+        .character.dnd .mouth {
+            width: 40px;
+            height: 20px;
+            border: 3px solid #333;
+            border-bottom: none;
+            border-radius: 40px 40px 0 0;
+            bottom: 32px;
+        }
+
+        /* Cheeks */
+        .cheek {
+            width: 18px;
+            height: 13px;
+            background: #ffb3d9;
+            border-radius: 50%;
+            position: absolute;
+            top: 55px;
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+
+        .cheek.left {
+            left: 10px;
+        }
+
+        .cheek.right {
+            right: 10px;
+        }
+
+        .character.focusing .cheek,
+        .character.dnd .cheek {
+            opacity: 0;
+        }
+
+        /* Animations */
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-15px);
+            }
+        }
+
+        @keyframes blink {
+            0%, 96%, 100% {
+                height: 12px;
+            }
+            98% {
+                height: 2px;
+            }
+        }
+
+        @keyframes look {
+            0%, 40%, 100% {
+                transform: translate(-50%, -50%) translateX(0px);
+            }
+            20% {
+                transform: translate(-50%, -50%) translateX(2px);
+            }
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        /* Status selector */
+        .status-selector {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 0.5rem;
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+
+        .status-selector:hover {
+            opacity: 1;
+        }
+
+        .status-btn {
+            width: 30px;
+            height: 30px;
+            border: 2px solid transparent;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .status-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .status-btn.active {
+            border-color: rgba(255, 255, 255, 0.8);
+            transform: scale(1.15);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .status-btn.available {
+            background: #2ecc71;
+        }
+
+        .status-btn.focusing {
+            background: #f39c12;
+        }
+
+        .status-btn.dnd {
+            background: #e74c3c;
+        }
+    </style>
+</head>
+<body class="available">
+    <div class="status-selector">
+        <div class="status-btn available active" data-status="available" title="Available"></div>
+        <div class="status-btn focusing" data-status="focusing" title="Focusing"></div>
+        <div class="status-btn dnd" data-status="dnd" title="Do Not Disturb"></div>
+    </div>
+
+    <div class="container">
+        <div class="status-text available">Available</div>
+        
+        <div class="character-container">
+            <div class="character available">
+                <div class="eye left"></div>
+                <div class="eye right"></div>
+                <div class="cheek left"></div>
+                <div class="cheek right"></div>
+                <div class="mouth"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const statuses = ['available', 'focusing', 'dnd'];
+        const statusNames = {
+            'available': 'Available',
+            'focusing': 'Focusing',
+            'dnd': 'Do Not Disturb'
+        };
+        let currentStatusIndex = 0;
+
+        function setStatus(statusIndex) {
+            currentStatusIndex = statusIndex;
+            const status = statuses[statusIndex];
+            
+            // Update body class
+            document.body.className = status;
+            
+            // Update status text
+            const statusText = document.querySelector('.status-text');
+            statusText.className = `status-text ${status}`;
+            statusText.textContent = statusNames[status];
+            
+            // Update character expression
+            const character = document.querySelector('.character');
+            character.className = `character ${status}`;
+            
+            // Update active button
+            document.querySelectorAll('.status-btn').forEach((btn, idx) => {
+                btn.classList.toggle('active', idx === statusIndex);
+            });
+        }
+
+        // Click handlers for status buttons
+        document.querySelectorAll('.status-btn').forEach((btn, idx) => {
+            btn.addEventListener('click', () => {
+                setStatus(idx);
+            });
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                currentStatusIndex = (currentStatusIndex - 1 + statuses.length) % statuses.length;
+                setStatus(currentStatusIndex);
+            } else if (e.key === 'ArrowRight') {
+                currentStatusIndex = (currentStatusIndex + 1) % statuses.length;
+                setStatus(currentStatusIndex);
+            }
+        });
+
+        // Random playful movements
+        function addPlayfulMovement() {
+            const character = document.querySelector('.character');
+            const randomDelay = Math.random() * 5000 + 3000; // 3-8 seconds
+            
+            setTimeout(() => {
+                // Small bounce
+                character.style.animation = 'float 3s ease-in-out infinite, bounce 0.5s ease-in-out';
+                
+                setTimeout(() => {
+                    character.style.animation = 'float 3s ease-in-out infinite';
+                    addPlayfulMovement();
+                }, 500);
+            }, randomDelay);
+        }
+
+        // Initialize
+        setStatus(0);
+        addPlayfulMovement();
+    </script>
+</body>
+</html>
+
+
