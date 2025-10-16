@@ -114,7 +114,6 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            animation: look 5s infinite;
         }
 
         .eye.left {
@@ -224,24 +223,6 @@
             }
             98% {
                 height: 2px;
-            }
-        }
-
-        @keyframes look {
-            0%, 40%, 100% {
-                transform: translate(-50%, -50%) translateX(0px);
-            }
-            20% {
-                transform: translate(-50%, -50%) translateX(2px);
-            }
-        }
-
-        @keyframes bounce {
-            0%, 100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-10px);
             }
         }
 
@@ -363,25 +344,8 @@
             }
         });
 
-        // Random playful movements
-        function addPlayfulMovement() {
-            const character = document.querySelector('.character');
-            const randomDelay = Math.random() * 5000 + 3000; // 3-8 seconds
-            
-            setTimeout(() => {
-                // Small bounce
-                character.style.animation = 'float 3s ease-in-out infinite, bounce 0.5s ease-in-out';
-                
-                setTimeout(() => {
-                    character.style.animation = 'float 3s ease-in-out infinite';
-                    addPlayfulMovement();
-                }, 500);
-            }, randomDelay);
-        }
-
         // Initialize
         setStatus(0);
-        addPlayfulMovement();
     </script>
 </body>
 </html>
