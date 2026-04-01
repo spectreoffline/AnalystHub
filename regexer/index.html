@@ -1,128 +1,141 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SecOps UDM Query Generator</title>
+    <title>SecOps UDM Tool - Fixed</title>
     <style>
         body { font-family: -apple-system, system-ui, sans-serif; max-width: 1000px; margin: 2rem auto; background: #f8f9fa; padding: 20px; color: #202124; }
         .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #e0e0e0; }
-        h2 { margin-top: 0; color: #1a73e8; font-weight: 500; }
-        textarea { width: 100%; height: 200px; font-family: 'Fira Code', 'Courier New', monospace; padding: 15px; border: 1px solid #dadce0; border-radius: 8px; box-sizing: border-box; font-size: 13px; resize: vertical; }
-        .controls { display: flex; align-items: center; gap: 15px; margin: 20px 0; flex-wrap: wrap; }
-        select { padding: 10px; border-radius: 6px; border: 1px solid #dadce0; font-size: 14px; background: white; cursor: pointer; }
-        button { padding: 10px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: 0.2s; }
+        textarea { width: 100%; height: 200px; font-family: monospace; padding: 15px; border: 1px solid #dadce0; border-radius: 8px; box-sizing: border-box; font-size: 13px; }
+        .controls { display: flex; align-items: center; gap: 15px; margin: 20px 0; }
+        select { padding: 10px; border-radius: 6px; border: 1px solid #dadce0; background: white; }
+        button { padding: 10px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
         .btn-run { background: #1a73e8; color: white; }
-        .btn-run:hover { background: #1557b0; }
         .btn-copy { background: #34a853; color: white; }
-        .btn-copy:hover { background: #2d8e47; }
-        #output { background: #202124; color: #e8eaed; padding: 20px; border-radius: 8px; white-space: pre-wrap; font-family: 'Fira Code', monospace; border: 1px solid #3c4043; word-break: break-all; font-size: 13px; line-height: 1.5; margin-top: 10px; min-height: 100px; }
+        #output { background: #202124; color: #e8eaed; padding: 20px; border-radius: 8px; white-space: pre-wrap; font-family: monospace; word-break: break-all; font-size: 13px; line-height: 1.6; margin-top: 10px; }
         .label { font-weight: 600; font-size: 14px; margin-bottom: 8px; display: block; color: #5f6368; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h2>SecOps UDM Query Generator</h2>
-        <p>Tokenizes IPs into grouped regex statements for one-off UDM searches.</p>
-        
+        <h2>SecOps UDM Tool</h2>
         <label class="label">1. Paste IP List:</label>
-        <textarea id="input" placeholder="173.239.218.108&#10;173.239.218.173&#10;2605:6400:8045:447..."></textarea>
+        <textarea id="input" placeholder="Paste IPs here..."></textarea>
         
         <div class="controls">
-            <div>
-                <label class="label">2. Select UDM Field:</label>
-                <select id="fieldSelect">
-                    <option value="principal">principal.ip</option>
-                    <option value="target">target.ip</option>
-                    <option value="src">network.src.ip</option>
-                    <option value="dst">network.dst.ip</option>
-                </select>
-            </div>
-            <div style="align-self: flex-end;">
-                <button class="btn-run" onclick="generateQuery()">Generate UDM Query</button>
-                <button class="btn-copy" id="copyBtn" onclick="copyResult()">Copy Query</button>
-            </div>
+            <select id="fieldSelect">
+                <option value="principal.ip">principal.ip</option>
+                <option value="target.ip">target.ip</option>
+                <option value="network.src.ip">network.src.ip</option>
+                <option value="network.dst.ip">network.dst.ip</option>
+            </select>
+            <button class="btn-run" onclick="generateQuery()">Generate Query</button>
+            <button class="btn-copy" onclick="copyResult()">Copy Result</button>
         </div>
 
-        <label class="label">3. UDM Search Syntax:</label>
-        <div id="output">Your query will appear here...</div>
+        <label class="label">2. Formatted UDM Query:</label>
+        <div id="output">Result will appear here...</div>
     </div>
 
     <script>
         function generateQuery() {
             const input = document.getElementById('input').value.trim();
-            const fieldKey = document.getElementById('fieldSelect').value;
-            const fieldName = (fieldKey === 'src' || fieldKey === 'dst') ? `network.${fieldKey}.ip` : `${fieldKey}.ip`;
-
+            const field = document.getElementById('fieldSelect').value;
             if (!input) return;
 
             const ips = [...new Set(input.split(/\s+/).filter(s => s.length > 0))];
-            const v4 = ips.filter(ip => ip.includes('.'));
-            const v6 = ips.filter(ip => ip.includes(':'));
+            
+            const v4Groups = {};
+            const v6Groups = {};
 
-            let statements = [];
+            // Step 1: Group by the very first segment
+            ips.forEach(ip => {
+                if (ip.includes('.')) {
+                    const first = ip.split('.')[0];
+                    if (!v4Groups[first]) v4Groups[first] = [];
+                    v4Groups[first].push(ip);
+                } else if (ip.includes(':')) {
+                    const first = ip.split(':')[0];
+                    if (!v6Groups[first]) v6Groups[first] = [];
+                    v6Groups[first].push(ip);
+                }
+            });
 
-            if (v4.length) {
-                const patterns = buildDeepTrie(v4, '.');
-                patterns.forEach(p => {
-                    const escaped = p.replace(/\./g, '\\.');
-                    statements.push(`${fieldName} = /\\b${escaped}\\b/`);
-                });
+            let finalStatements = [];
+
+            // Step 2: Build deep-grouped regex for each first-octet group
+            for (const root in v4Groups) {
+                const pattern = buildTrie(v4Groups[root], '.');
+                const escaped = pattern.replace(/\./g, '\\.'); // Escape dots for regex
+                finalStatements.push(`${field} = /\\b${escaped}\\b/`);
             }
 
-            if (v6.length) {
-                const patterns = buildDeepTrie(v6, ':');
-                patterns.forEach(p => {
-                    statements.push(`${fieldName} = /\\b${p}\\b/`);
-                });
+            for (const root in v6Groups) {
+                const pattern = buildTrie(v6Groups[root], ':');
+                finalStatements.push(`${field} = /\\b${pattern}\\b/`);
             }
 
-            document.getElementById('output').innerText = statements.join(' OR\n');
+            // Step 3: Join them with OR
+            document.getElementById('output').innerText = finalStatements.join(' OR\n');
         }
 
-        function buildDeepTrie(ips, sep) {
+        function buildTrie(list, sep) {
             const trie = {};
-            for (const ip of ips) {
+            list.forEach(ip => {
                 let curr = trie;
                 ip.split(sep).forEach(part => {
                     if (!curr[part]) curr[part] = {};
                     curr = curr[part];
                 });
                 curr.$ = true;
-            }
+            });
 
-            const results = [];
-            function walk(node, path) {
+            function walk(node) {
                 const keys = Object.keys(node).filter(k => k !== '$');
-                if (keys.length === 0) {
-                    results.push(path.join(sep));
-                    return;
+                if (keys.length === 0) return "";
+                
+                const results = keys.map(k => {
+                    const sub = walk(node[k]);
+                    return sub === "" ? k : k + sep + sub;
+                });
+
+                if (results.length === 1) return results[0];
+
+                // Attempt to find a common prefix among the results to group further
+                const common = getCommonPrefix(results, sep);
+                if (common) {
+                    const suffixes = results.map(r => r.slice(common.length + 1));
+                    return common + sep + "(?:" + suffixes.join('|') + ")";
                 }
-                if (keys.length === 1) {
-                    walk(node[keys[0]], [...path, keys[0]]);
-                } else {
-                    const branches = keys.map(k => getFullSuffix(node[k], k, sep));
-                    results.push(path.join(sep) + sep + "(" + branches.join('|') + ")");
-                }
+                return "(?:" + results.join('|') + ")";
             }
 
-            function getFullSuffix(node, currentPart, sep) {
-                const keys = Object.keys(node).filter(k => k !== '$');
-                if (keys.length === 0) return currentPart;
-                if (keys.length === 1) {
-                    return getFullSuffix(node[keys[0]], currentPart + sep + keys[0], sep);
-                }
-                return currentPart + sep + "(" + keys.map(k => getFullSuffix(node[k], k, sep)).join('|') + ")";
+            const root = Object.keys(trie).filter(k => k !== '$');
+            if (root.length === 1) {
+                const sub = walk(trie[root[0]]);
+                return sub === "" ? root[0] : root[0] + sep + sub;
             }
-
-            Object.keys(trie).forEach(k => walk(trie[k], [k]));
-            return results;
+            return "(?:" + root.map(k => {
+                const sub = walk(trie[k]);
+                return sub === "" ? k : k + sep + sub;
+            }).join('|') + ")";
         }
 
-        async function copyResult() {
+        function getCommonPrefix(arr, sep) {
+            if (arr.length < 2) return null;
+            let parts = arr.map(x => x.split(sep));
+            let common = [];
+            for (let i = 0; i < parts[0].length; i++) {
+                let token = parts[0][i];
+                if (parts.every(p => p[i] === token)) common.push(token);
+                else break;
+            }
+            return common.length > 0 ? common.join(sep) : null;
+        }
+
+        function copyResult() {
             const text = document.getElementById('output').innerText;
-            await navigator.clipboard.writeText(text);
-            const btn = document.getElementById('copyBtn');
-            btn.innerText = "Copied!";
-            setTimeout(() => btn.innerText = "Copy Query", 2000);
+            navigator.clipboard.writeText(text);
+            alert("Copied!");
         }
     </script>
 </body>
