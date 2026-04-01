@@ -1,100 +1,96 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Multi-Octet IP Grouper</title>
+    <title>SecOps UDM IP Tool</title>
     <style>
-        body { font-family: system-ui, -apple-system, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; background: #f8f9fa; }
-        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        textarea { width: 100%; height: 250px; font-family: 'ui-monospace', monospace; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
-        #output { background: #1e1e1e; color: #75beff; padding: 20px; border-radius: 8px; white-space: pre-wrap; font-family: 'ui-monospace', monospace; margin-top: 20px; min-height: 50px; overflow-x: auto; }
-        button { background: #0061ff; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; margin-top: 10px; }
-        button:hover { background: #0052d9; }
-        .label { font-weight: bold; display: block; margin-bottom: 8px; color: #444; }
+        body { font-family: -apple-system, system-ui, sans-serif; max-width: 900px; margin: 2rem auto; background: #f4f7f9; color: #333; line-height: 1.5; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        textarea { width: 100%; height: 200px; font-family: monospace; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        .controls { display: flex; gap: 10px; margin: 15px 0; }
+        button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-primary { background: #1a73e8; color: white; }
+        .btn-copy { background: #34a853; color: white; }
+        .btn-primary:hover { background: #1557b0; }
+        #output { background: #1e1e1e; color: #9cdcfe; padding: 20px; border-radius: 8px; white-space: pre-wrap; font-family: monospace; min-height: 50px; border: 1px solid #333; }
+        .status { font-size: 0.8rem; color: #666; margin-top: 5px; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h2>Deep IP Segment Grouper</h2>
-        <p>Groups IPv4/IPv6 by the longest possible common segments.</p>
+        <h2>Google SecOps IP Compressor</h2>
+        <p>Paste IPs to group them into <code>1.2.3.(x|y|z)</code> format.</p>
         
-        <label class="label">Input IP List:</label>
-        <textarea id="input" placeholder="173.239.218.108&#10;173.239.218.173&#10;2605:6400:8045:447:23e1..."></textarea>
+        <textarea id="input" placeholder="Paste IP list here..."></textarea>
         
-        <button onclick="process()">Group & Compress</button>
-        
-        <label class="label" style="margin-top:20px;">Grouped Result:</label>
+        <div class="controls">
+            <button class="btn-primary" onclick="processIPs()">Group & Generate</button>
+            <button class="btn-copy" onclick="copyResult()">Copy to Clipboard</button>
+        </div>
+
         <div id="output">Result will appear here...</div>
+        <div id="status" class="status"></div>
     </div>
 
     <script>
-        function process() {
+        function processIPs() {
             const input = document.getElementById('input').value.trim();
             if (!input) return;
-            const lines = input.split(/\n+/).map(s => s.trim()).filter(s => s !== "");
-            
-            // Separate v4 and v6 because they use different delimiters
+
+            const lines = [...new Set(input.split(/\s+/).filter(s => s.length > 0))];
             const v4 = lines.filter(ip => ip.includes('.'));
             const v6 = lines.filter(ip => ip.includes(':'));
 
-            let results = [];
-            if (v4.length) results.push(...solve(v4, '.'));
-            if (v6.length) results.push(...solve(v6, ':'));
+            let finalOutput = [];
 
-            document.getElementById('output').innerText = results.join('\n');
+            if (v4.length > 0) finalOutput.push(...groupSegments(v4, '.'));
+            if (v6.length > 0) finalOutput.push(...groupSegments(v6, ':'));
+
+            // Format for Google SecOps UDM Search: wrap in / / and add boundaries
+            const result = finalOutput.length > 1 
+                ? `/\\b(?:${finalOutput.join('|')})\\b/`
+                : `/\\b${finalOutput[0]}\\b/`;
+
+            // Escape dots for Regex literal matching
+            const escapedResult = result.replace(/\.(?![^()]*\))/g, "\\.");
+
+            document.getElementById('output').innerText = escapedResult;
+            document.getElementById('status').innerText = `Processed ${lines.length} IPs into ${finalOutput.length} grouped lines.`;
         }
 
-        function solve(ips, sep) {
-            const trie = {};
-            for (const ip of ips) {
-                const parts = ip.split(sep);
-                let current = trie;
-                for (const part of parts) {
-                    if (!current[part]) current[part] = {};
-                    current = current[part];
-                }
-                current['$'] = true; // End of IP marker
-            }
-
-            const output = [];
+        function groupSegments(ips, sep) {
+            const groups = {};
             
-            function walk(node, prefixParts) {
-                const keys = Object.keys(node).filter(k => k !== '$');
+            ips.forEach(ip => {
+                const parts = ip.split(sep);
+                const last = parts.pop();
+                const prefix = parts.join(sep);
                 
-                if (keys.length === 0) {
-                    output.push(prefixParts.join(sep));
-                    return;
-                }
+                if (!groups[prefix]) groups[prefix] = new Set();
+                groups[prefix].add(last);
+            });
 
-                if (keys.length === 1) {
-                    // Only one branch? Keep walking to find a deeper prefix
-                    const key = keys[0];
-                    walk(node[key], [...prefixParts, key]);
+            const results = [];
+            for (const [prefix, suffixes] of Object.entries(groups)) {
+                if (suffixes.size === 1) {
+                    results.push(`${prefix}${sep}${Array.from(suffixes)[0]}`);
                 } else {
-                    // Multiple branches found! This is where we group
-                    const groupedSuffixes = [];
-                    for (const key of keys) {
-                        groupedSuffixes.push(collapse(node[key], key, sep));
-                    }
-                    output.push(prefixParts.join(sep) + sep + "(" + groupedSuffixes.join('|') + ")");
+                    const sorted = Array.from(suffixes).sort();
+                    results.push(`${prefix}${sep}(${sorted.join('|')})`);
                 }
             }
+            return results;
+        }
 
-            function collapse(node, currentPath, separator) {
-                const keys = Object.keys(node).filter(k => k !== '$');
-                if (keys.length === 0) return currentPath;
-                if (keys.length === 1) {
-                    return collapse(node[keys[0]], currentPath + separator + keys[0], separator);
-                }
-                // If it branches again inside a group, we nest it
-                return currentPath + separator + "(" + keys.map(k => collapse(node[k], k, separator)).join('|') + ")";
+        async function copyResult() {
+            const text = document.getElementById('output').innerText;
+            try {
+                await navigator.clipboard.writeText(text);
+                const btn = document.querySelector('.btn-copy');
+                btn.innerText = "Copied!";
+                setTimeout(() => btn.innerText = "Copy to Clipboard", 2000);
+            } catch (err) {
+                alert("Failed to copy. Please select and copy manually.");
             }
-
-            // Start the process
-            const rootKeys = Object.keys(trie);
-            for (const key of rootKeys) {
-                walk(trie[key], [key]);
-            }
-            return [...new Set(output)]; // Remove duplicates
         }
     </script>
 </body>
