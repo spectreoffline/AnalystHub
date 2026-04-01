@@ -1,69 +1,100 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SecOps UDM Regex Generator</title>
+    <title>Multi-Octet IP Grouper</title>
     <style>
-        body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; line-height: 1.5; background: #f9f9f9; }
-        textarea { width: 100%; height: 200px; font-family: monospace; padding: 10px; border: 1px solid #ccc; }
-        #output { background: #fff; padding: 15px; border: 1px solid #4285f4; border-left: 5px solid #4285f4; word-break: break-all; margin-top: 10px; font-family: monospace; }
-        button { background: #4285f4; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .hint { font-size: 0.85rem; color: #666; margin-bottom: 10px; }
+        body { font-family: system-ui, -apple-system, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; background: #f8f9fa; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        textarea { width: 100%; height: 250px; font-family: 'ui-monospace', monospace; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+        #output { background: #1e1e1e; color: #75beff; padding: 20px; border-radius: 8px; white-space: pre-wrap; font-family: 'ui-monospace', monospace; margin-top: 20px; min-height: 50px; overflow-x: auto; }
+        button { background: #0061ff; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; margin-top: 10px; }
+        button:hover { background: #0052d9; }
+        .label { font-weight: bold; display: block; margin-bottom: 8px; color: #444; }
     </style>
 </head>
 <body>
-    <h2>Google SecOps Regex Compressor</h2>
-    <div class="hint">Paste IPs (IPv4 or IPv6). Groups by segments to avoid broken matches.</div>
-    <textarea id="input" placeholder="1.212.225.99&#10;101.251.197.46"></textarea>
-    <p><button onclick="generate()">Generate UDM Regex</button></p>
-    <div id="output">Regex will appear here...</div>
+    <div class="card">
+        <h2>Deep IP Segment Grouper</h2>
+        <p>Groups IPv4/IPv6 by the longest possible common segments.</p>
+        
+        <label class="label">Input IP List:</label>
+        <textarea id="input" placeholder="173.239.218.108&#10;173.239.218.173&#10;2605:6400:8045:447:23e1..."></textarea>
+        
+        <button onclick="process()">Group & Compress</button>
+        
+        <label class="label" style="margin-top:20px;">Grouped Result:</label>
+        <div id="output">Result will appear here...</div>
+    </div>
 
     <script>
-        function generate() {
+        function process() {
             const input = document.getElementById('input').value.trim();
             if (!input) return;
-            const lines = input.split(/\n+/).map(s => s.trim());
+            const lines = input.split(/\n+/).map(s => s.trim()).filter(s => s !== "");
             
-            // Separate IPv4 and IPv6 to avoid trie corruption
+            // Separate v4 and v6 because they use different delimiters
             const v4 = lines.filter(ip => ip.includes('.'));
             const v6 = lines.filter(ip => ip.includes(':'));
 
-            let patterns = [];
-            if (v4.length) patterns.push(compress(v4, '.'));
-            if (v6.length) patterns.push(compress(v6, ':'));
+            let results = [];
+            if (v4.length) results.push(...solve(v4, '.'));
+            if (v6.length) results.push(...solve(v6, ':'));
 
-            const finalRegex = patterns.length > 1 ? `(?:${patterns.join('|')})` : patterns[0];
-            // Adding word boundaries \b for UDM accuracy
-            document.getElementById('output').innerText = ` /\\b${finalRegex}\\b/`;
+            document.getElementById('output').innerText = results.join('\n');
         }
 
-        function compress(list, separator) {
-            const tokenized = list.map(ip => ip.split(separator));
+        function solve(ips, sep) {
             const trie = {};
-
-            for (const tokens of tokenized) {
+            for (const ip of ips) {
+                const parts = ip.split(sep);
                 let current = trie;
-                for (const token of tokens) {
-                    if (!current[token]) current[current.length] = {}; // marker for order
-                    if (!current[token]) current[token] = {};
-                    current = current[token];
+                for (const part of parts) {
+                    if (!current[part]) current[part] = {};
+                    current = current[part];
                 }
-                current['$'] = {}; // End marker
+                current['$'] = true; // End of IP marker
             }
 
-            function build(node) {
+            const output = [];
+            
+            function walk(node, prefixParts) {
                 const keys = Object.keys(node).filter(k => k !== '$');
-                if (keys.length === 0) return "";
                 
-                const parts = keys.map(k => {
-                    const escapedK = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                    const child = build(node[k]);
-                    return escapedK + (child ? (separator === '.' ? '\\.' : ':') + child : "");
-                });
+                if (keys.length === 0) {
+                    output.push(prefixParts.join(sep));
+                    return;
+                }
 
-                return parts.length > 1 ? `(?:${parts.join('|')})` : parts[0];
+                if (keys.length === 1) {
+                    // Only one branch? Keep walking to find a deeper prefix
+                    const key = keys[0];
+                    walk(node[key], [...prefixParts, key]);
+                } else {
+                    // Multiple branches found! This is where we group
+                    const groupedSuffixes = [];
+                    for (const key of keys) {
+                        groupedSuffixes.push(collapse(node[key], key, sep));
+                    }
+                    output.push(prefixParts.join(sep) + sep + "(" + groupedSuffixes.join('|') + ")");
+                }
             }
 
-            return build(trie);
+            function collapse(node, currentPath, separator) {
+                const keys = Object.keys(node).filter(k => k !== '$');
+                if (keys.length === 0) return currentPath;
+                if (keys.length === 1) {
+                    return collapse(node[keys[0]], currentPath + separator + keys[0], separator);
+                }
+                // If it branches again inside a group, we nest it
+                return currentPath + separator + "(" + keys.map(k => collapse(node[k], k, separator)).join('|') + ")";
+            }
+
+            // Start the process
+            const rootKeys = Object.keys(trie);
+            for (const key of rootKeys) {
+                walk(trie[key], [key]);
+            }
+            return [...new Set(output)]; // Remove duplicates
         }
     </script>
 </body>
