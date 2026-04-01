@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>IP Regex Compressor</title>
+    <script src="https://unpkg.com/regexgen@1.3.0/dist/regexgen.js"></script>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+        textarea { width: 100%; height: 150px; margin-bottom: 1rem; }
+        #output { background: #f4f4f4; padding: 1rem; border-radius: 4px; word-break: break-all; border: 1px solid #ddd; }
+        button { padding: 10px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h2>SIEM Regex Compressor</h2>
+    <p>Paste your IP list (one per line):</p>
+    <textarea id="input" placeholder="192.168.1.1&#10;192.168.1.2"></textarea>
+    <button onclick="compress()">Compress to Regex</button>
+    
+    <h3>Result:</h3>
+    <div id="output">Your optimized regex will appear here...</div>
+
+    <script>
+        function compress() {
+            const input = document.getElementById('input').value;
+            const output = document.getElementById('output');
+            
+            // 1. Split by lines and clean up whitespace
+            const list = input.split('\n')
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+
+            if (list.length === 0) return;
+
+            // 2. Escape dots for literal matching
+            const escapedList = list.map(ip => ip.replace(/\./g, '\\.'));
+
+            // 3. Generate the optimized trie-based regex
+            const result = regexgen(escapedList);
+            
+            output.innerText = result.toString();
+        }
+    </script>
+</body>
+</html>
