@@ -1,89 +1,69 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP Regex Optimizer</title>
+    <title>SecOps UDM Regex Generator</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; max-width: 700px; margin: 40px auto; padding: 20px; color: #333; line-height: 1.6; }
-        textarea { width: 100%; height: 180px; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-family: monospace; box-sizing: border-box; transition: border-color 0.3s; }
-        textarea:focus { border-color: #007bff; outline: none; }
-        .controls { margin: 20px 0; display: flex; gap: 10px; }
-        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 6px; font-weight: bold; transition: opacity 0.2s; }
-        .btn-primary { background: #007bff; color: white; }
-        .btn-secondary { background: #6c757d; color: white; }
-        button:hover { opacity: 0.8; }
-        #output-container { background: #f8f9fa; border: 1px solid #e9ecef; padding: 15px; border-radius: 8px; position: relative; }
-        #output { font-family: monospace; word-break: break-all; white-space: pre-wrap; font-size: 14px; color: #d63384; }
-        .label { font-weight: bold; margin-bottom: 8px; display: block; }
+        body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; line-height: 1.5; background: #f9f9f9; }
+        textarea { width: 100%; height: 200px; font-family: monospace; padding: 10px; border: 1px solid #ccc; }
+        #output { background: #fff; padding: 15px; border: 1px solid #4285f4; border-left: 5px solid #4285f4; word-break: break-all; margin-top: 10px; font-family: monospace; }
+        button { background: #4285f4; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .hint { font-size: 0.85rem; color: #666; margin-bottom: 10px; }
     </style>
 </head>
 <body>
-
-    <h2>SIEM Regex Compressor</h2>
-    <p>Paste your IP list below. This tool groups common prefixes to keep your queries short.</p>
-
-    <label class="label">Input IPs:</label>
-    <textarea id="input" placeholder="192.168.1.1&#10;192.168.1.2&#10;169.100.1.1"></textarea>
-
-    <div class="controls">
-        <button class="btn-primary" onclick="process()">Generate Regex</button>
-        <button class="btn-secondary" onclick="copyToClipboard()">Copy Result</button>
-    </div>
-
-    <label class="label">Optimized Regex:</label>
-    <div id="output-container">
-        <div id="output">Result will appear here...</div>
-    </div>
+    <h2>Google SecOps Regex Compressor</h2>
+    <div class="hint">Paste IPs (IPv4 or IPv6). Groups by segments to avoid broken matches.</div>
+    <textarea id="input" placeholder="1.212.225.99&#10;101.251.197.46"></textarea>
+    <p><button onclick="generate()">Generate UDM Regex</button></p>
+    <div id="output">Regex will appear here...</div>
 
     <script>
-        function trieToRegex(trie) {
-            const keys = Object.keys(trie);
-            if (keys.length === 0) return '';
+        function generate() {
+            const input = document.getElementById('input').value.trim();
+            if (!input) return;
+            const lines = input.split(/\n+/).map(s => s.trim());
             
-            // If this node is the end of a string
-            const isEnd = keys.includes('');
-            const subKeys = keys.filter(k => k !== '');
+            // Separate IPv4 and IPv6 to avoid trie corruption
+            const v4 = lines.filter(ip => ip.includes('.'));
+            const v6 = lines.filter(ip => ip.includes(':'));
 
-            if (subKeys.length === 0) return '';
+            let patterns = [];
+            if (v4.length) patterns.push(compress(v4, '.'));
+            if (v6.length) patterns.push(compress(v6, ':'));
 
-            const result = subKeys.map(k => {
-                const escapedK = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                return escapedK + trieToRegex(trie[k]);
-            });
-
-            if (result.length === 1) {
-                return result[0] + (isEnd ? '?' : '');
-            } else {
-                return '(?:' + result.join('|') + ')' + (isEnd ? '?' : '');
-            }
+            const finalRegex = patterns.length > 1 ? `(?:${patterns.join('|')})` : patterns[0];
+            // Adding word boundaries \b for UDM accuracy
+            document.getElementById('output').innerText = ` /\\b${finalRegex}\\b/`;
         }
 
-        function process() {
-            const text = document.getElementById('input').value;
-            const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
-            if (lines.length === 0) return;
-
-            // Build Trie
+        function compress(list, separator) {
+            const tokenized = list.map(ip => ip.split(separator));
             const trie = {};
-            for (const line of lines) {
+
+            for (const tokens of tokenized) {
                 let current = trie;
-                // We split by characters but keep the logic for IPs
-                for (const char of line) {
-                    if (!current[char]) current[char] = {};
-                    current = current[char];
+                for (const token of tokens) {
+                    if (!current[token]) current[current.length] = {}; // marker for order
+                    if (!current[token]) current[token] = {};
+                    current = current[token];
                 }
-                current[''] = {}; // Mark end of string
+                current['$'] = {}; // End marker
             }
 
-            const regex = trieToRegex(trie);
-            document.getElementById('output').innerText = '/' + regex + '/';
-        }
+            function build(node) {
+                const keys = Object.keys(node).filter(k => k !== '$');
+                if (keys.length === 0) return "";
+                
+                const parts = keys.map(k => {
+                    const escapedK = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const child = build(node[k]);
+                    return escapedK + (child ? (separator === '.' ? '\\.' : ':') + child : "");
+                });
 
-        function copyToClipboard() {
-            const text = document.getElementById('output').innerText;
-            navigator.clipboard.writeText(text);
-            alert("Copied to clipboard!");
+                return parts.length > 1 ? `(?:${parts.join('|')})` : parts[0];
+            }
+
+            return build(trie);
         }
     </script>
 </body>
