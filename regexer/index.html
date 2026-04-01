@@ -1,38 +1,34 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SecOps UDM IP Tool</title>
+    <title>SecOps Deep Regex Grouper</title>
     <style>
-        body { font-family: -apple-system, system-ui, sans-serif; max-width: 900px; margin: 2rem auto; background: #f4f7f9; color: #333; line-height: 1.5; }
+        body { font-family: -apple-system, system-ui, sans-serif; max-width: 900px; margin: 2rem auto; background: #f4f7f9; padding: 20px; }
         .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         textarea { width: 100%; height: 200px; font-family: monospace; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
         .controls { display: flex; gap: 10px; margin: 15px 0; }
-        button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        button { padding: 10px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn-primary { background: #1a73e8; color: white; }
         .btn-copy { background: #34a853; color: white; }
-        .btn-primary:hover { background: #1557b0; }
-        #output { background: #1e1e1e; color: #9cdcfe; padding: 20px; border-radius: 8px; white-space: pre-wrap; font-family: monospace; min-height: 50px; border: 1px solid #333; }
-        .status { font-size: 0.8rem; color: #666; margin-top: 5px; }
+        #output { background: #1e1e1e; color: #9cdcfe; padding: 20px; border-radius: 8px; white-space: pre-wrap; font-family: monospace; border: 1px solid #333; word-break: break-all; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h2>Google SecOps IP Compressor</h2>
-        <p>Paste IPs to group them into <code>1.2.3.(x|y|z)</code> format.</p>
-        
+        <h2>Deep Regex Compressor</h2>
+        <p>Groups IPs by common segments and formats for Google SecOps.</p>
         <textarea id="input" placeholder="Paste IP list here..."></textarea>
         
         <div class="controls">
-            <button class="btn-primary" onclick="processIPs()">Group & Generate</button>
-            <button class="btn-copy" onclick="copyResult()">Copy to Clipboard</button>
+            <button class="btn-primary" onclick="process()">Generate & Escape</button>
+            <button class="btn-copy" id="copyBtn" onclick="copyResult()">Copy Result</button>
         </div>
 
         <div id="output">Result will appear here...</div>
-        <div id="status" class="status"></div>
     </div>
 
     <script>
-        function processIPs() {
+        function process() {
             const input = document.getElementById('input').value.trim();
             if (!input) return;
 
@@ -40,57 +36,65 @@
             const v4 = lines.filter(ip => ip.includes('.'));
             const v6 = lines.filter(ip => ip.includes(':'));
 
-            let finalOutput = [];
+            let regexGroups = [];
+            if (v4.length) regexGroups.push(...buildDeepTrie(v4, '.'));
+            if (v6.length) regexGroups.push(...buildDeepTrie(v6, ':'));
 
-            if (v4.length > 0) finalOutput.push(...groupSegments(v4, '.'));
-            if (v6.length > 0) finalOutput.push(...groupSegments(v6, ':'));
+            // Format: Escape dots, wrap in / / and join with OR
+            const formatted = regexGroups.map(pattern => {
+                const escaped = pattern.replace(/\./g, '\\.');
+                return `/${escaped}/`;
+            }).join(' OR ');
 
-            // Format for Google SecOps UDM Search: wrap in / / and add boundaries
-            const result = finalOutput.length > 1 
-                ? `/\\b(?:${finalOutput.join('|')})\\b/`
-                : `/\\b${finalOutput[0]}\\b/`;
-
-            // Escape dots for Regex literal matching
-            const escapedResult = result.replace(/\.(?![^()]*\))/g, "\\.");
-
-            document.getElementById('output').innerText = escapedResult;
-            document.getElementById('status').innerText = `Processed ${lines.length} IPs into ${finalOutput.length} grouped lines.`;
+            document.getElementById('output').innerText = formatted;
         }
 
-        function groupSegments(ips, sep) {
-            const groups = {};
-            
-            ips.forEach(ip => {
-                const parts = ip.split(sep);
-                const last = parts.pop();
-                const prefix = parts.join(sep);
-                
-                if (!groups[prefix]) groups[prefix] = new Set();
-                groups[prefix].add(last);
-            });
+        function buildDeepTrie(ips, sep) {
+            const trie = {};
+            for (const ip of ips) {
+                let curr = trie;
+                ip.split(sep).forEach(part => {
+                    if (!curr[part]) curr[part] = {};
+                    curr = curr[part];
+                });
+                curr.$ = true;
+            }
 
             const results = [];
-            for (const [prefix, suffixes] of Object.entries(groups)) {
-                if (suffixes.size === 1) {
-                    results.push(`${prefix}${sep}${Array.from(suffixes)[0]}`);
+            
+            function walk(node, path) {
+                const keys = Object.keys(node).filter(k => k !== '$');
+                if (keys.length === 0) {
+                    results.push(path.join(sep));
+                    return;
+                }
+                if (keys.length === 1) {
+                    walk(node[keys[0]], [...path, keys[0]]);
                 } else {
-                    const sorted = Array.from(suffixes).sort();
-                    results.push(`${prefix}${sep}(${sorted.join('|')})`);
+                    const branches = keys.map(k => getFullSuffix(node[k], k, sep));
+                    results.push(path.join(sep) + sep + "(" + branches.join('|') + ")");
                 }
             }
+
+            function getFullSuffix(node, currentPart, sep) {
+                const keys = Object.keys(node).filter(k => k !== '$');
+                if (keys.length === 0) return currentPart;
+                if (keys.length === 1) {
+                    return getFullSuffix(node[keys[0]], currentPart + sep + keys[0], sep);
+                }
+                return currentPart + sep + "(" + keys.map(k => getFullSuffix(node[k], k, sep)).join('|') + ")";
+            }
+
+            Object.keys(trie).forEach(k => walk(trie[k], [k]));
             return results;
         }
 
         async function copyResult() {
             const text = document.getElementById('output').innerText;
-            try {
-                await navigator.clipboard.writeText(text);
-                const btn = document.querySelector('.btn-copy');
-                btn.innerText = "Copied!";
-                setTimeout(() => btn.innerText = "Copy to Clipboard", 2000);
-            } catch (err) {
-                alert("Failed to copy. Please select and copy manually.");
-            }
+            await navigator.clipboard.writeText(text);
+            const btn = document.getElementById('copyBtn');
+            btn.innerText = "Copied!";
+            setTimeout(() => btn.innerText = "Copy Result", 2000);
         }
     </script>
 </body>
