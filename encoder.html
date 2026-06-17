@@ -74,6 +74,8 @@
         #output { user-select: text; }
         #redactBtn { position: fixed; z-index: 1000; display: none; background: var(--red); color: #fff; border: none; border-radius: 6px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.28); }
         #redactBtn:hover { background: #8f1d17; }
+        button.redact-sel { background: var(--red-bg); color: var(--red); border: 1px solid #f0c4c0; }
+        button.redact-sel:hover { background: #f8d8d4; }
         .tag.manual { color: #fff; background: var(--red); }
     </style>
 </head>
@@ -88,8 +90,10 @@
     <button onclick="processInput()">Anonymize</button>
     <button class="secondary" onclick="copyOutput()">Copy output</button>
     <button class="secondary" onclick="clearAll()">Clear</button>
+    <button class="redact-sel" onmousedown="event.preventDefault()" onclick="redactSelection()">&#10005; Redact selection</button>
     <label class="opt"><input type="checkbox" id="optConsistent" checked> Consistent tokens <span style="color:#8a8f9c">(same value &rarr; same tag #)</span></label>
     <span id="copiedMsg" class="copied" style="display:none">Copied!</span>
+    <span id="redactMsg" class="copied" style="display:none;color:var(--red)"></span>
 </div>
 
 <div class="layout">
@@ -437,24 +441,38 @@ function showRedactBtn(rect) {
 }
 function hideRedactBtn() { redactBtnEl.style.display = 'none'; pendingSelection = ''; }
 
-function captureSelection() {
+// Read the current text selection if it lies inside the output.
+function getOutputSelectionText() {
     const sel = window.getSelection();
-    if (!sel || sel.isCollapsed || sel.rangeCount === 0) { hideRedactBtn(); return; }
-    if (!outputEl.contains(sel.anchorNode) || !outputEl.contains(sel.focusNode)) { hideRedactBtn(); return; }
+    if (!sel || sel.isCollapsed || sel.rangeCount === 0) return '';
+    if (!outputEl.contains(sel.anchorNode) || !outputEl.contains(sel.focusNode)) return '';
     let text = sel.toString();
     if (!text && sel.rangeCount) text = sel.getRangeAt(0).toString();
+    return text;
+}
+
+function captureSelection() {
+    const text = getOutputSelectionText();
     if (!text.trim() || !currentText) { hideRedactBtn(); return; }
     pendingSelection = text;
-    showRedactBtn(sel.getRangeAt(0).getBoundingClientRect());
+    showRedactBtn(window.getSelection().getRangeAt(0).getBoundingClientRect());
+}
+
+function flashRedactMsg(msg) {
+    const m = document.getElementById('redactMsg');
+    m.textContent = msg;
+    m.style.display = 'inline';
+    setTimeout(() => { m.style.display = 'none'; }, 1600);
 }
 
 function redactSelection() {
-    const value = (pendingSelection || '').replace(/^\s+|\s+$/g, '');
-    if (!value) return;
+    // prefer the live selection; fall back to the last one captured on mouseup
+    let value = (getOutputSelectionText() || pendingSelection || '').replace(/^\s+|\s+$/g, '');
+    if (!currentText) { flashRedactMsg('anonymize something first'); return; }
+    if (!value) { flashRedactMsg('select text in the output first'); return; }
     if (currentText.indexOf(value) === -1) {
         // selection crossed an already-redacted token (its visible text isn't in the source)
-        redactBtnEl.textContent = "can't redact that";
-        setTimeout(hideRedactBtn, 1100);
+        flashRedactMsg("can't redact that selection");
         return;
     }
     const id = redactions.length;
