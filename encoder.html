@@ -2,271 +2,483 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>URL Encoder</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Universal Log Anonymizer</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --bg: #f4f4f9;
+            --panel: #ffffff;
+            --border: #d6d9e0;
+            --accent: #2d6cdf;
+            --accent-dark: #1f4fa8;
+            --red: #b3261e;
+            --red-bg: #fcebea;
+            --green: #137a3a;
+            --green-bg: #e7f6ec;
+            --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
         }
+        * { box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; padding: 24px; background: var(--bg); color: #1c1e26; max-width: 1300px; margin: 0 auto; }
+        h2 { margin: 0 0 4px; }
+        .sub { color: #5b6170; margin: 0 0 18px; font-size: 14px; }
+        textarea { width: 100%; height: 220px; font-family: var(--mono); font-size: 13px; padding: 10px; border: 1px solid var(--border); border-radius: 8px; resize: vertical; }
+        .controls { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 12px 0; }
+        button { background: var(--accent); color: #fff; border: none; padding: 9px 18px; border-radius: 7px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        button:hover { background: var(--accent-dark); }
+        button.secondary { background: #eef1f7; color: #2b2f3a; border: 1px solid var(--border); }
+        button.secondary:hover { background: #e2e6ef; }
+        label.opt { font-size: 13px; color: #3a3f4b; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+        .copied { color: #1a7f37; font-size: 13px; margin-left: 8px; }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
+        .layout { display: flex; gap: 14px; align-items: stretch; margin-top: 14px; }
+        .panel { background: var(--panel); padding: 16px; border: 1px solid var(--border); border-radius: 8px; }
+        .panel h3 { margin: 0 0 10px; font-size: 15px; }
+        .output-panel { flex: 1 1 60%; min-width: 0; }
+        .sidebar { flex: 1 1 38%; min-width: 280px; max-width: 460px; display: flex; flex-direction: column; }
+        @media (max-width: 860px) { .layout { flex-direction: column; } .sidebar { max-width: none; } }
 
-        .container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 40px;
-            max-width: 800px;
-            width: 100%;
-        }
+        .meta { font-size: 13px; margin: 0 0 12px; }
+        .badge { display: inline-block; background: #eef1f7; border: 1px solid var(--border); border-radius: 20px; padding: 2px 10px; margin: 2px 4px 2px 0; font-size: 12px; }
+        .badge.type { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+        .badge.err { background: var(--red-bg); color: var(--red); border-color: #f3c6c2; }
 
-        h1 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 28px;
-        }
+        pre { white-space: pre-wrap; word-break: break-word; font-family: var(--mono); font-size: 13px; margin: 0; max-height: 520px; overflow: auto; }
 
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
+        /* redacted token in output (click to restore) */
+        .rd { color: var(--red); background: var(--red-bg); border-radius: 3px; padding: 0 3px; cursor: pointer; font-weight: 600; }
+        .rd:hover { outline: 1px solid var(--red); }
+        /* restored original in output (click to re-redact) */
+        .ur { color: var(--green); background: var(--green-bg); border-radius: 3px; padding: 0 3px; cursor: pointer; }
+        .ur:hover { outline: 1px solid var(--green); }
+        .flash { animation: flash 0.6s ease; }
+        @keyframes flash { from { background: #fff3b0; } }
 
-        .config-section {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 25px;
-        }
+        .sb-head { display: flex; justify-content: space-between; align-items: baseline; }
+        .sb-actions { font-size: 12px; }
+        .sb-actions a { color: var(--accent); cursor: pointer; margin-left: 10px; }
+        .rlist { overflow: auto; max-height: 520px; margin-top: 8px; }
+        .ritem { border: 1px solid var(--border); border-radius: 7px; padding: 8px 10px; margin-bottom: 8px; }
+        .ritem.off { opacity: 0.6; }
+        .ritem-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .tag { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--accent-dark); background: #eef1f7; border-radius: 4px; padding: 1px 6px; }
+        .toggle { border: 1px solid var(--border); background: #fff; color: #444; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+        .toggle.on { color: var(--red); border-color: #f0c4c0; background: var(--red-bg); }
+        .toggle.on:hover { background: #f8d8d4; }
+        .toggle.off { color: var(--green); border-color: #bfe3cb; background: var(--green-bg); }
+        .ba { font-family: var(--mono); font-size: 12px; margin-top: 6px; line-height: 1.5; }
+        .ba .lbl { display: inline-block; width: 48px; color: #8a8f9c; }
+        .ba .before { color: var(--red); word-break: break-all; }
+        .ba .after { color: var(--green); }
+        .empty { color: #8a8f9c; font-size: 13px; padding: 10px 0; }
 
-        .config-section h2 {
-            color: #333;
-            font-size: 16px;
-            margin-bottom: 15px;
-        }
-
-        .input-group {
-            margin-bottom: 15px;
-        }
-
-        .input-group:last-child {
-            margin-bottom: 0;
-        }
-
-        label {
-            display: block;
-            color: #555;
-            font-weight: 500;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        input[type="text"],
-        textarea {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 14px;
-            font-family: 'Courier New', monospace;
-            transition: border-color 0.3s;
-        }
-
-        input[type="text"]:focus,
-        textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 120px;
-        }
-
-        button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 14px 32px;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            width: 100%;
-            margin-bottom: 20px;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-
-        button:active {
-            transform: translateY(0);
-        }
-
-        .output-section {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            margin-top: 25px;
-        }
-
-        .output-section h2 {
-            color: #333;
-            font-size: 16px;
-            margin-bottom: 15px;
-        }
-
-        .output-box {
-            background: white;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            padding: 16px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            word-break: break-all;
-            min-height: 60px;
-            color: #333;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .output-box.empty {
-            color: #999;
-        }
-
-        .copy-btn {
-            margin-top: 12px;
-            background: #28a745;
-            width: auto;
-            padding: 10px 24px;
-            font-size: 14px;
-        }
-
-        .copy-btn:hover {
-            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
-        }
-
-        .copy-btn.copied {
-            background: #20c997;
-        }
-
-        .info-box {
-            background: #e7f3ff;
-            border-left: 4px solid #667eea;
-            padding: 12px 16px;
-            border-radius: 4px;
-            margin-top: 20px;
-            font-size: 13px;
-            color: #555;
-        }
+        #output { user-select: text; }
+        #redactBtn { position: fixed; z-index: 1000; display: none; background: var(--red); color: #fff; border: none; border-radius: 6px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.28); }
+        #redactBtn:hover { background: #8f1d17; }
+        .tag.manual { color: #fff; background: var(--red); }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>URL Encoder</h1>
-        <p class="subtitle">Encode your text and combine it with custom prefix and suffix</p>
 
-        <div class="config-section">
-            <h2>Configuration</h2>
-            <div class="input-group">
-                <label for="prefix">URL Prefix:</label>
-                <input type="text" id="prefix" placeholder="https://{tenant}.backstory.chronicle.security/search?query=" value="https://{tenant}.backstory.chronicle.security/search?query=">
-            </div>
-            <div class="input-group">
-                <label for="suffix">URL Suffix:</label>
-                <input type="text" id="suffix" placeholder="&startTime={starttime}&endTime={endtime}&queryType=QUERY_TYPE_UDM_QUERY&tab=events" value="&startTime={starttime}&endTime={endtime}&queryType=QUERY_TYPE_UDM_QUERY&tab=events">
-            </div>
-        </div>
+<h2>Universal Log Anonymizer</h2>
+<p class="sub">Auto-detects JSON or XML and walks the structure; falls back to line-based regex otherwise. Redacted items are shown <span style="color:var(--red);font-weight:600">in red</span> &mdash; click any token (in the output or the sidebar) to restore the original value, click again to re-redact. <b>Miss something?</b> Select any text in the output and click <span style="color:var(--red);font-weight:600">✕ Redact</span> to scrub it manually.<br><span style="color:#8a8f9c">IP addresses and file hashes (MD5/SHA1/SHA256/&hellip;) are preserved as IOCs and never redacted.</span></p>
 
-        <div class="input-group">
-            <label for="userInput">Your Text (multi-line supported):</label>
-            <textarea id="userInput" placeholder="Enter your query here...&#10;replace the desired parameter with {indicator}!"></textarea>
-        </div>
+<textarea id="inputLogs" placeholder="Paste JSON, XML, or raw log text here..."></textarea>
 
-        <button onclick="encodeAndCombine()">Encode & Generate URL</button>
+<div class="controls">
+    <button onclick="processInput()">Anonymize</button>
+    <button class="secondary" onclick="copyOutput()">Copy output</button>
+    <button class="secondary" onclick="clearAll()">Clear</button>
+    <label class="opt"><input type="checkbox" id="optConsistent" checked> Consistent tokens <span style="color:#8a8f9c">(same value &rarr; same tag #)</span></label>
+    <span id="copiedMsg" class="copied" style="display:none">Copied!</span>
+</div>
 
-        <div class="output-section">
-            <h2>Generated URL</h2>
-            <div id="output" class="output-box empty">Your encoded URL will appear here...</div>
-            <button class="copy-btn" id="copyBtn" onclick="copyToClipboard()" style="display: none;">Copy to Clipboard</button>
-        </div>
-
-        <div class="info-box">
-            <strong>How it works:</strong> Enter your text, configure the prefix and suffix, then click the button. Your text will be URL encoded (preserving curly brackets {}) and combined into a complete URL.
-        </div>
+<div class="layout">
+    <div class="panel output-panel">
+        <h3>Result</h3>
+        <p class="meta" id="meta"></p>
+        <pre id="output">Paste some JSON, XML, or log text above, then click Anonymize.</pre>
     </div>
+    <div class="panel sidebar">
+        <div class="sb-head">
+            <h3 style="margin:0">Redactions <span id="rcount" style="color:#8a8f9c;font-weight:400"></span></h3>
+            <span class="sb-actions">
+                <a id="restoreAll" onclick="setAll(false)">restore all</a>
+                <a id="redactAll" onclick="setAll(true)">redact all</a>
+            </span>
+        </div>
+        <div class="rlist" id="rlist"><div class="empty">Nothing redacted yet.</div></div>
+    </div>
+</div>
 
-    <script>
-        function encodeAndCombine() {
-            // Get values
-            const prefix = document.getElementById('prefix').value;
-            const suffix = document.getElementById('suffix').value;
-            const userInput = document.getElementById('userInput').value;
+<button id="redactBtn" onmousedown="event.preventDefault()" onclick="redactSelection()">&#10005; Redact</button>
 
-            // URL encode the user input, but preserve curly brackets
-            const encodedInput = encodeURIComponent(userInput)
-                .replace(/%7B/g, '{')
-                .replace(/%7D/g, '}');
+<script>
+/* ============================================================================
+ *  SENSITIVE KEY DETECTION
+ * ========================================================================== */
+const SENSITIVE_KEY_SUBSTRINGS = [
+    'password','passwd','pwd','passphrase','secret','clientsecret','apikey','accesskey','secretkey','privatekey','sharedkey',
+    'token','accesstoken','refreshtoken','idtoken','bearer','sessiontoken','credential','cred','authorization','authheader','cookie','sessionid','connectionstring','connstring',
+    'username','userid','useraccount','accountname','accountid','loginname','samaccountname','userprincipalname','principalname','upn',
+    'displayname','fullname','firstname','lastname','givenname','surname','middlename','nickname','initiatingname','callername',
+    'email','emailaddress','mailaddress','mail','smtpaddress','recipient','sender',
+    'hostname','computername','machinename','devicename','nodename','workstation','domainname','fqdn','netbios',
+    'macaddress','physicaladdress',  // NOTE: IP-address keys intentionally omitted — IPs are handled value-side so public IPs are preserved
+    'latitude','longitude','geolocation','streetaddress','postaladdress','postalcode','zipcode','city',
+    'guid','uuid','objectguid','objectid','objectsid','usersid','securityidentifier','tenantid','subscriptionid','correlationid','requestid','deviceid','aaduserid','azureaduserid','aadid',
+    'ssn','socialsecurity','nationalid','passport','driverlicense','taxid','creditcard','cardnumber','cvv','iban','bankaccount','phone','phonenumber','mobile','telephone','faxnumber'
+];
+const SENSITIVE_KEY_REGEXES = [/(^|[a-z0-9])id$/, /(^|[^a-z])sid$/];
 
-            // Combine: prefix + encoded input + suffix
-            const finalURL = prefix + encodedInput + suffix;
+/* File hashes are preserved (IOCs). Standard digest lengths are never redacted by the HEX rule. */
+const HASH_HEX_LENGTHS = new Set([32, 40, 56, 64, 96, 128]); // MD5, SHA1, SHA224, SHA256, SHA384, SHA512
 
-            // Display the result
-            const outputDiv = document.getElementById('output');
-            outputDiv.textContent = finalURL;
-            outputDiv.classList.remove('empty');
+function isSensitiveKey(key) {
+    const norm = String(key).toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!norm) return false;
+    if (SENSITIVE_KEY_SUBSTRINGS.some(s => norm.includes(s))) return true;
+    if (SENSITIVE_KEY_REGEXES.some(r => r.test(norm))) return true;
+    return false;
+}
 
-            // Show copy button
-            document.getElementById('copyBtn').style.display = 'block';
+/* ============================================================================
+ *  VALUE PATTERN RULES (specific -> greedy)
+ * ========================================================================== */
+const VALUE_RULES = [
+    { tag: 'JWT', regex: /eyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}/g },
+    { tag: 'EMAIL', regex: /[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}/g },
+    { tag: 'GUID', regex: /\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b/g },
+    { tag: 'SID', regex: /\bS-\d-\d+(?:-\d+){1,}\b/g },
+    { tag: 'MAC', regex: /\b(?:[0-9A-Fa-f]{2}[:\-]){5}[0-9A-Fa-f]{2}\b/g },
+    // NOTE: IP addresses (v4 and v6) are intentionally NOT redacted — kept as-is.
+    { tag: 'HOST', keepScheme: true, regex: /(\bhttps?:\/\/)([^\s\/"'<>)]+)/gi },
+    { tag: 'CARD', regex: /\b(?:\d{4}[\-\s]){3}\d{4}\b/g },
+    { tag: 'PHONE', regex: /(?:\+?\d{1,3}[\-.\s]?)?\(?\d{3}\)?[\-.\s]\d{3}[\-.\s]\d{4}\b/g },
+    // Long hex blobs, but NOT standard file-hash lengths (those are IOCs, kept).
+    { tag: 'HEX', regex: /\b[0-9a-fA-F]{16,}\b/g, filter: m => !HASH_HEX_LENGTHS.has(m.length) }
+];
 
-            // Reset copy button text
-            const copyBtn = document.getElementById('copyBtn');
-            copyBtn.textContent = 'Copy to Clipboard';
-            copyBtn.classList.remove('copied');
-        }
+/* ============================================================================
+ *  REDACTION REGISTRY
+ *  Every redaction emits a unique sentinel into the output text. The sentinel
+ *  is rendered as a clickable span at display time, so each item can be
+ *  individually toggled (restored / re-redacted).
+ * ========================================================================== */
+const SENT_A = '\uE000', SENT_B = '\uE001';      // private-use markers, survive JSON/XML serialization
+const sentinelRe = /\uE000(\d+)\uE001/g;
 
-        function copyToClipboard() {
-            const output = document.getElementById('output').textContent;
-            
-            // Copy to clipboard
-            navigator.clipboard.writeText(output).then(() => {
-                // Update button to show success
-                const copyBtn = document.getElementById('copyBtn');
-                copyBtn.textContent = 'Copied! ✓';
-                copyBtn.classList.add('copied');
+let consistent = true;
+let redactions = [];        // [{id, tag, displayToken, original, kind, active}]
+let valueIndex = new Map(); // "tag::value" -> id  (consistent-token reuse)
+let tagCounters = {};       // tag -> running number
 
-                // Reset after 2 seconds
-                setTimeout(() => {
-                    copyBtn.textContent = 'Copy to Clipboard';
-                    copyBtn.classList.remove('copied');
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy:', err);
-                alert('Failed to copy to clipboard');
-            });
-        }
+function resetState() {
+    redactions = [];
+    valueIndex = new Map();
+    tagCounters = {};
+}
 
-        // Allow Enter key to trigger encoding (with Ctrl+Enter for new lines)
-        document.getElementById('userInput').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.ctrlKey) {
-                e.preventDefault();
-                encodeAndCombine();
-            }
+function sentinel(id) { return SENT_A + id + SENT_B; }
+
+function registerValue(tag, value) {
+    if (consistent) {
+        const k = tag + '::' + value;
+        if (valueIndex.has(k)) return sentinel(valueIndex.get(k));
+        tagCounters[tag] = (tagCounters[tag] || 0) + 1;
+        const id = redactions.length;
+        redactions.push({ id, tag, displayToken: '[' + tag + '_' + tagCounters[tag] + ']', original: value, kind: 'value', active: true });
+        valueIndex.set(k, id);
+        return sentinel(id);
+    }
+    const id = redactions.length;
+    redactions.push({ id, tag, displayToken: '[' + tag + ']', original: value, kind: 'value', active: true });
+    return sentinel(id);
+}
+
+function registerKey(value) {
+    let original;
+    try { original = typeof value === 'string' ? value : JSON.stringify(value); }
+    catch (e) { original = String(value); }
+    const id = redactions.length;
+    redactions.push({ id, tag: 'REDACTED', displayToken: '[REDACTED]', original, kind: 'key', active: true });
+    return sentinel(id);
+}
+
+function applyValueRules(str) {
+    if (typeof str !== 'string' || !str) return str;
+    let out = str;
+    for (const rule of VALUE_RULES) {
+        out = out.replace(rule.regex, function (match, p1, p2) {
+            const matched = rule.keepScheme ? p2 : match;
+            if (rule.filter && !rule.filter(matched)) return match; // leave it untouched
+            if (rule.keepScheme) return p1 + registerValue(rule.tag, p2);
+            return registerValue(rule.tag, match);
         });
-    </script>
+    }
+    return out;
+}
+
+/* ============================================================================
+ *  JSON (structure-preserving)
+ * ========================================================================== */
+function anonymizeJson(node) {
+    if (Array.isArray(node)) return node.map(anonymizeJson);
+    if (node && typeof node === 'object') {
+        const out = {};
+        for (const key of Object.keys(node)) {
+            out[key] = isSensitiveKey(key) ? registerKey(node[key]) : anonymizeJson(node[key]);
+        }
+        return out;
+    }
+    if (typeof node === 'string') return applyValueRules(node);
+    return node;
+}
+
+/* ============================================================================
+ *  XML (text + attributes)
+ * ========================================================================== */
+function anonymizeXmlNode(node) {
+    if (node.nodeType === 1) {
+        if (node.attributes) {
+            for (const attr of Array.from(node.attributes)) {
+                node.setAttribute(attr.name, isSensitiveKey(attr.name) ? registerKey(attr.value) : applyValueRules(attr.value));
+            }
+        }
+        if (isSensitiveKey(node.tagName)) { node.textContent = registerKey(node.textContent); return; }
+        for (const child of Array.from(node.childNodes)) anonymizeXmlNode(child);
+    } else if (node.nodeType === 3 || node.nodeType === 4) {
+        node.textContent = applyValueRules(node.textContent);
+    }
+}
+
+/* ============================================================================
+ *  PLAINTEXT FALLBACK
+ * ========================================================================== */
+const KV_KEY_FRAGMENTS = ['password','passwd','pwd','passphrase','secret','apikey','accesskey','privatekey','token','bearer','credential','authorization','cookie','username','user','account','principalname','upn','displayname','email','mail','hostname','computername','sid','guid','phone','ssn'];
+
+function anonymizeText(raw) {
+    let out = applyValueRules(raw);
+    const kvRegex = new RegExp(
+        '(["\']?[A-Za-z0-9_.\\-]*(?:' + KV_KEY_FRAGMENTS.join('|') + ')[A-Za-z0-9_.\\-]*["\']?\\s*[:=]\\s*)' +
+        '(?:"([^"\\r\\n]+)"|\'([^\'\\r\\n]+)\'|([^"\'\\s,;}{]+))',
+        'gi'
+    );
+    out = out.replace(kvRegex, function (m, pre, dq, sq, uq) {
+        if (dq !== undefined) return pre + '"' + registerKey(dq) + '"';
+        if (sq !== undefined) return pre + "'" + registerKey(sq) + "'";
+        return pre + registerKey(uq);
+    });
+    return out;
+}
+
+/* ============================================================================
+ *  DETECTION + DRIVER
+ * ========================================================================== */
+let currentText = '';   // serialized output containing sentinels
+let currentType = '';
+
+function detectAndAnonymize(raw) {
+    try {
+        const data = JSON.parse(raw);
+        if (data && typeof data === 'object') return { type: 'JSON', text: JSON.stringify(anonymizeJson(data), null, 2) };
+    } catch (e) { /* not JSON */ }
+
+    if (raw.trim().startsWith('<')) {
+        const xmlDoc = new DOMParser().parseFromString(raw, 'text/xml');
+        if (xmlDoc.getElementsByTagName('parsererror').length === 0 && xmlDoc.documentElement) {
+            anonymizeXmlNode(xmlDoc.documentElement);
+            return { type: 'XML', text: new XMLSerializer().serializeToString(xmlDoc) };
+        }
+    }
+    return { type: 'Plaintext (regex fallback)', text: anonymizeText(raw) };
+}
+
+function processInput() {
+    const raw = document.getElementById('inputLogs').value;
+    document.getElementById('copiedMsg').style.display = 'none';
+
+    if (!raw.trim()) { clearAll(); return; }
+
+    consistent = document.getElementById('optConsistent').checked;
+    resetState();
+
+    try {
+        const result = detectAndAnonymize(raw);
+        currentText = result.text;
+        currentType = result.type;
+        renderAll();
+    } catch (e) {
+        currentText = '';
+        document.getElementById('meta').innerHTML = '<span class="badge err">Error: ' + escapeHtml(e.message) + '</span>';
+        document.getElementById('output').textContent = '';
+        document.getElementById('rlist').innerHTML = '<div class="empty">Nothing redacted yet.</div>';
+        document.getElementById('rcount').textContent = '';
+    }
+}
+
+/* ============================================================================
+ *  RENDERING
+ * ========================================================================== */
+function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function renderAll() { renderMeta(); renderOutput(); renderSidebar(); }
+
+function renderMeta() {
+    const counts = {};
+    for (const r of redactions) counts[r.tag] = (counts[r.tag] || 0) + 1;
+    const restored = redactions.filter(r => !r.active).length;
+    let html = '<span class="badge type">Detected: ' + escapeHtml(currentType) + '</span>';
+    const tags = Object.keys(counts).sort();
+    if (tags.length === 0) {
+        html += '<span class="badge">No sensitive data matched</span>';
+    } else {
+        for (const t of tags) {
+            html += '<span class="badge">' + (t === 'REDACTED' ? counts[t] + ' redacted key(s)' : counts[t] + '&times; ' + t) + '</span>';
+        }
+        if (restored) html += '<span class="badge" style="color:var(--green)">' + restored + ' restored</span>';
+    }
+    document.getElementById('meta').innerHTML = html;
+}
+
+function renderOutput() {
+    let html = escapeHtml(currentText).replace(sentinelRe, function (m, idStr) {
+        const r = redactions[+idStr];
+        if (!r) return m;
+        if (r.active) return '<span class="rd" data-id="' + r.id + '" title="Click to restore original">' + escapeHtml(r.displayToken) + '</span>';
+        return '<span class="ur" data-id="' + r.id + '" title="Click to re-redact">' + escapeHtml(r.original) + '</span>';
+    });
+    document.getElementById('output').innerHTML = html || 'No output.';
+}
+
+function renderSidebar() {
+    const list = document.getElementById('rlist');
+    document.getElementById('rcount').textContent = redactions.length ? '(' + redactions.length + ')' : '';
+    if (redactions.length === 0) { list.innerHTML = '<div class="empty">Nothing redacted yet.</div>'; return; }
+
+    list.innerHTML = redactions.map(r => {
+        const active = r.active;
+        return '<div class="ritem ' + (active ? '' : 'off') + '" data-id="' + r.id + '">' +
+            '<div class="ritem-top">' +
+                '<span class="tag' + (r.kind === 'manual' ? ' manual' : '') + '">' + escapeHtml(r.tag) + '</span>' +
+                '<button class="toggle ' + (active ? 'on' : 'off') + '" data-id="' + r.id + '">' +
+                    (active ? '✕ restore' : '↩ redact') +
+                '</button>' +
+            '</div>' +
+            '<div class="ba">' +
+                '<div><span class="lbl">before</span><span class="before">' + escapeHtml(r.original) + '</span></div>' +
+                '<div><span class="lbl">after</span><span class="after">' + escapeHtml(r.displayToken) + '</span></div>' +
+            '</div>' +
+        '</div>';
+    }).join('');
+}
+
+function toggle(id, scrollToToken) {
+    const r = redactions[id];
+    if (!r) return;
+    r.active = !r.active;
+    renderAll();
+    if (scrollToToken) {
+        const el = document.querySelector('#output [data-id="' + id + '"]');
+        if (el) { el.classList.add('flash'); el.scrollIntoView({ block: 'nearest' }); }
+    }
+}
+
+function setAll(active) {
+    redactions.forEach(r => r.active = active);
+    renderAll();
+}
+
+/* ============================================================================
+ *  ACTIONS
+ * ========================================================================== */
+function copyOutput() {
+    if (!currentText) return;
+    const plain = currentText.replace(sentinelRe, (m, idStr) => {
+        const r = redactions[+idStr];
+        if (!r) return m;
+        return r.active ? r.displayToken : r.original;
+    });
+    navigator.clipboard.writeText(plain).then(() => {
+        const msg = document.getElementById('copiedMsg');
+        msg.style.display = 'inline';
+        setTimeout(() => { msg.style.display = 'none'; }, 1500);
+    });
+}
+
+function clearAll() {
+    document.getElementById('inputLogs').value = '';
+    currentText = ''; currentType = '';
+    resetState();
+    hideRedactBtn();
+    document.getElementById('output').textContent = 'Paste some JSON, XML, or log text above, then click Anonymize.';
+    document.getElementById('meta').innerHTML = '';
+    document.getElementById('rlist').innerHTML = '<div class="empty">Nothing redacted yet.</div>';
+    document.getElementById('rcount').textContent = '';
+}
+
+/* ============================================================================
+ *  MANUAL REDACTION FROM THE OUTPUT
+ *  Select text in the output -> a floating Redact button appears -> clicking it
+ *  registers a normal (toggleable) redaction for every occurrence of that value.
+ * ========================================================================== */
+let pendingSelection = '';
+const outputEl = document.getElementById('output');
+const redactBtnEl = document.getElementById('redactBtn');
+
+function showRedactBtn(rect) {
+    redactBtnEl.textContent = '✕ Redact';
+    redactBtnEl.style.display = 'block';
+    let top = rect.top - 34;
+    if (top < 4) top = rect.bottom + 6;
+    redactBtnEl.style.top = top + 'px';
+    redactBtnEl.style.left = Math.max(4, Math.min(rect.left, window.innerWidth - 90)) + 'px';
+}
+function hideRedactBtn() { redactBtnEl.style.display = 'none'; pendingSelection = ''; }
+
+function captureSelection() {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || sel.rangeCount === 0) { hideRedactBtn(); return; }
+    if (!outputEl.contains(sel.anchorNode) || !outputEl.contains(sel.focusNode)) { hideRedactBtn(); return; }
+    let text = sel.toString();
+    if (!text && sel.rangeCount) text = sel.getRangeAt(0).toString();
+    if (!text.trim() || !currentText) { hideRedactBtn(); return; }
+    pendingSelection = text;
+    showRedactBtn(sel.getRangeAt(0).getBoundingClientRect());
+}
+
+function redactSelection() {
+    const value = (pendingSelection || '').replace(/^\s+|\s+$/g, '');
+    if (!value) return;
+    if (currentText.indexOf(value) === -1) {
+        // selection crossed an already-redacted token (its visible text isn't in the source)
+        redactBtnEl.textContent = "can't redact that";
+        setTimeout(hideRedactBtn, 1100);
+        return;
+    }
+    const id = redactions.length;
+    redactions.push({ id, tag: 'MANUAL', displayToken: '[REDACTED]', original: value, kind: 'manual', active: true });
+    currentText = currentText.split(value).join(sentinel(id)); // redact every occurrence
+    window.getSelection().removeAllRanges();
+    hideRedactBtn();
+    renderAll();
+}
+
+/* event delegation: click tokens in output (ignored while selecting), toggle buttons in sidebar */
+outputEl.addEventListener('click', e => {
+    if (window.getSelection().toString().trim()) return; // user is selecting, not toggling
+    const span = e.target.closest('[data-id]');
+    if (span) toggle(+span.dataset.id, false);
+});
+document.getElementById('rlist').addEventListener('click', e => {
+    const btn = e.target.closest('.toggle');
+    if (btn) toggle(+btn.dataset.id, true);
+});
+
+document.addEventListener('mouseup', () => setTimeout(captureSelection, 0));
+document.addEventListener('mousedown', e => { if (e.target !== redactBtnEl) hideRedactBtn(); });
+outputEl.addEventListener('scroll', hideRedactBtn);
+</script>
 </body>
 </html>
-
