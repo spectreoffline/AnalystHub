@@ -70,12 +70,19 @@
         .ba .before { color: var(--red); word-break: break-all; }
         .ba .after { color: var(--green); }
         .empty { color: #8a8f9c; font-size: 13px; padding: 10px 0; }
+
+        #output { user-select: text; }
+        #redactBtn { position: fixed; z-index: 1000; display: none; background: var(--red); color: #fff; border: none; border-radius: 6px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.28); }
+        #redactBtn:hover { background: #8f1d17; }
+        button.redact-sel { background: var(--red-bg); color: var(--red); border: 1px solid #f0c4c0; }
+        button.redact-sel:hover { background: #f8d8d4; }
+        .tag.manual { color: #fff; background: var(--red); }
     </style>
 </head>
 <body>
 
 <h2>Universal Log Anonymizer</h2>
-<p class="sub">Auto-detects JSON or XML and walks the structure; falls back to line-based regex otherwise. Redacted items are shown <span style="color:var(--red);font-weight:600">in red</span> &mdash; click any token (in the output or the sidebar) to restore the original value, click again to re-redact.<br><span style="color:#8a8f9c">IP addresses and file hashes (MD5/SHA1/SHA256/&hellip;) are preserved as IOCs and never redacted.</span></p>
+<p class="sub">Auto-detects JSON or XML and walks the structure; falls back to line-based regex otherwise. Redacted items are shown <span style="color:var(--red);font-weight:600">in red</span> &mdash; click any token (in the output or the sidebar) to restore the original value, click again to re-redact. <b>Miss something?</b> Select any text in the output and click <span style="color:var(--red);font-weight:600">✕ Redact</span> to scrub it manually.<br><span style="color:#8a8f9c">IP addresses and file hashes (MD5/SHA1/SHA256/&hellip;) are preserved as IOCs and never redacted.</span></p>
 
 <textarea id="inputLogs" placeholder="Paste JSON, XML, or raw log text here..."></textarea>
 
@@ -83,8 +90,10 @@
     <button onclick="processInput()">Anonymize</button>
     <button class="secondary" onclick="copyOutput()">Copy output</button>
     <button class="secondary" onclick="clearAll()">Clear</button>
+    <button class="redact-sel" onmousedown="event.preventDefault()" onclick="redactSelection()">&#10005; Redact selection</button>
     <label class="opt"><input type="checkbox" id="optConsistent" checked> Consistent tokens <span style="color:#8a8f9c">(same value &rarr; same tag #)</span></label>
     <span id="copiedMsg" class="copied" style="display:none">Copied!</span>
+    <span id="redactMsg" class="copied" style="display:none;color:var(--red)"></span>
 </div>
 
 <div class="layout">
@@ -104,6 +113,8 @@
         <div class="rlist" id="rlist"><div class="empty">Nothing redacted yet.</div></div>
     </div>
 </div>
+
+<button id="redactBtn" onmousedown="event.preventDefault()" onclick="redactSelection()">&#10005; Redact</button>
 
 <script>
 /* ============================================================================
@@ -354,7 +365,7 @@ function renderSidebar() {
         const active = r.active;
         return '<div class="ritem ' + (active ? '' : 'off') + '" data-id="' + r.id + '">' +
             '<div class="ritem-top">' +
-                '<span class="tag">' + escapeHtml(r.tag) + '</span>' +
+                '<span class="tag' + (r.kind === 'manual' ? ' manual' : '') + '">' + escapeHtml(r.tag) + '</span>' +
                 '<button class="toggle ' + (active ? 'on' : 'off') + '" data-id="' + r.id + '">' +
                     (active ? '✕ restore' : '↩ redact') +
                 '</button>' +
@@ -404,14 +415,77 @@ function clearAll() {
     document.getElementById('inputLogs').value = '';
     currentText = ''; currentType = '';
     resetState();
+    hideRedactBtn();
     document.getElementById('output').textContent = 'Paste some JSON, XML, or log text above, then click Anonymize.';
     document.getElementById('meta').innerHTML = '';
     document.getElementById('rlist').innerHTML = '<div class="empty">Nothing redacted yet.</div>';
     document.getElementById('rcount').textContent = '';
 }
 
-/* event delegation: click tokens in output, or toggle buttons in sidebar */
-document.getElementById('output').addEventListener('click', e => {
+/* ============================================================================
+ *  MANUAL REDACTION FROM THE OUTPUT
+ *  Select text in the output -> a floating Redact button appears -> clicking it
+ *  registers a normal (toggleable) redaction for every occurrence of that value.
+ * ========================================================================== */
+let pendingSelection = '';
+const outputEl = document.getElementById('output');
+const redactBtnEl = document.getElementById('redactBtn');
+
+function showRedactBtn(rect) {
+    redactBtnEl.textContent = '✕ Redact';
+    redactBtnEl.style.display = 'block';
+    let top = rect.top - 34;
+    if (top < 4) top = rect.bottom + 6;
+    redactBtnEl.style.top = top + 'px';
+    redactBtnEl.style.left = Math.max(4, Math.min(rect.left, window.innerWidth - 90)) + 'px';
+}
+function hideRedactBtn() { redactBtnEl.style.display = 'none'; pendingSelection = ''; }
+
+// Read the current text selection if it lies inside the output.
+function getOutputSelectionText() {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || sel.rangeCount === 0) return '';
+    if (!outputEl.contains(sel.anchorNode) || !outputEl.contains(sel.focusNode)) return '';
+    let text = sel.toString();
+    if (!text && sel.rangeCount) text = sel.getRangeAt(0).toString();
+    return text;
+}
+
+function captureSelection() {
+    const text = getOutputSelectionText();
+    if (!text.trim() || !currentText) { hideRedactBtn(); return; }
+    pendingSelection = text;
+    showRedactBtn(window.getSelection().getRangeAt(0).getBoundingClientRect());
+}
+
+function flashRedactMsg(msg) {
+    const m = document.getElementById('redactMsg');
+    m.textContent = msg;
+    m.style.display = 'inline';
+    setTimeout(() => { m.style.display = 'none'; }, 1600);
+}
+
+function redactSelection() {
+    // prefer the live selection; fall back to the last one captured on mouseup
+    let value = (getOutputSelectionText() || pendingSelection || '').replace(/^\s+|\s+$/g, '');
+    if (!currentText) { flashRedactMsg('anonymize something first'); return; }
+    if (!value) { flashRedactMsg('select text in the output first'); return; }
+    if (currentText.indexOf(value) === -1) {
+        // selection crossed an already-redacted token (its visible text isn't in the source)
+        flashRedactMsg("can't redact that selection");
+        return;
+    }
+    const id = redactions.length;
+    redactions.push({ id, tag: 'MANUAL', displayToken: '[REDACTED]', original: value, kind: 'manual', active: true });
+    currentText = currentText.split(value).join(sentinel(id)); // redact every occurrence
+    window.getSelection().removeAllRanges();
+    hideRedactBtn();
+    renderAll();
+}
+
+/* event delegation: click tokens in output (ignored while selecting), toggle buttons in sidebar */
+outputEl.addEventListener('click', e => {
+    if (window.getSelection().toString().trim()) return; // user is selecting, not toggling
     const span = e.target.closest('[data-id]');
     if (span) toggle(+span.dataset.id, false);
 });
@@ -419,6 +493,10 @@ document.getElementById('rlist').addEventListener('click', e => {
     const btn = e.target.closest('.toggle');
     if (btn) toggle(+btn.dataset.id, true);
 });
+
+document.addEventListener('mouseup', () => setTimeout(captureSelection, 0));
+document.addEventListener('mousedown', e => { if (e.target !== redactBtnEl) hideRedactBtn(); });
+outputEl.addEventListener('scroll', hideRedactBtn);
 </script>
 </body>
 </html>
